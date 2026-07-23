@@ -1,0 +1,312 @@
+{
+  "timestamp": "2026-07-22T21:03:38.227265+00:00",
+  "increment": "01-tracking-baseline",
+  "status": "tracking measured \u2014 bytetrack on SportsMOT-basketball-val (HOTA=0.3012)",
+  "dataset": {
+    "name": "sportsmot",
+    "gt_set": "SportsMOT-basketball-val",
+    "mot_split": "val",
+    "n_sequences_prepared": 15,
+    "n_sequences_evaluated": 15,
+    "sequences_evaluated": [
+      "v_00HRwkvvjtQ_c001",
+      "v_00HRwkvvjtQ_c003",
+      "v_00HRwkvvjtQ_c005",
+      "v_00HRwkvvjtQ_c007",
+      "v_00HRwkvvjtQ_c008",
+      "v_00HRwkvvjtQ_c011",
+      "v_4r8QL_wglzQ_c001",
+      "v_5ekaksddqrc_c001",
+      "v_5ekaksddqrc_c002",
+      "v_5ekaksddqrc_c003",
+      "v_5ekaksddqrc_c004",
+      "v_5ekaksddqrc_c005",
+      "v_BgwzTUxJaeU_c008",
+      "v_BgwzTUxJaeU_c012",
+      "v_BgwzTUxJaeU_c014"
+    ]
+  },
+  "config": {
+    "seed": 13,
+    "detect": {
+      "model": "yolo",
+      "weights": null,
+      "conf": 0.25,
+      "iou": 0.7,
+      "classes": [
+        "player",
+        "ball"
+      ],
+      "device": "mps",
+      "imgsz": 1280,
+      "batch": 16,
+      "person_class": 0
+    },
+    "track": {
+      "method": "bytetrack",
+      "min_conf": 0.1,
+      "use_reid": false,
+      "track_thresh": 0.45,
+      "match_thresh": 0.8,
+      "track_buffer": 25
+    },
+    "homography": {
+      "method": "kalicalib",
+      "enabled": false
+    },
+    "reid": {
+      "model": "osnet",
+      "enabled": false
+    },
+    "embedding": {
+      "enabled": false,
+      "arch": "trajectory_transformer",
+      "dim": 128,
+      "objective": "contrastive",
+      "window_seconds": 8
+    },
+    "retrieval": {
+      "enabled": false,
+      "index": "faiss",
+      "top_k": 10
+    },
+    "eval": {
+      "dataset": "sportsmot",
+      "data_dir": "data/sportsmot",
+      "split": "basketball",
+      "mot_split": "val",
+      "benchmark": "SportsMOT",
+      "metrics": [
+        "hota",
+        "mota",
+        "idf1"
+      ],
+      "retrieval_ks": [
+        1,
+        5,
+        10
+      ],
+      "out_dir": "eval_results",
+      "max_sequences": null,
+      "max_frames": null
+    }
+  },
+  "results": {
+    "detection_mAP": null,
+    "tracking": {
+      "HOTA": 0.301222042294773,
+      "DetA": 0.32511425477502076,
+      "AssA": 0.2793294046846589,
+      "LocA": 0.8373880417460104,
+      "MOTA": -0.39455501788344205,
+      "MOTP": 0.8128239727196594,
+      "IDF1": 0.2813736325761255,
+      "IDSW": 901.0,
+      "Frag": 2017.0,
+      "per_seq_HOTA": {
+        "v_00HRwkvvjtQ_c001": 0.28551955074670654,
+        "v_00HRwkvvjtQ_c003": 0.3354322842010992,
+        "v_00HRwkvvjtQ_c005": 0.33083802290285136,
+        "v_00HRwkvvjtQ_c007": 0.29621187647604236,
+        "v_00HRwkvvjtQ_c008": 0.35226138681521735,
+        "v_00HRwkvvjtQ_c011": 0.3386329502110172,
+        "v_4r8QL_wglzQ_c001": 0.3688739071697897,
+        "v_5ekaksddqrc_c001": 0.33351871210144374,
+        "v_5ekaksddqrc_c002": 0.275387135205436,
+        "v_5ekaksddqrc_c003": 0.25008688864971973,
+        "v_5ekaksddqrc_c004": 0.2873979837732722,
+        "v_5ekaksddqrc_c005": 0.2574795997759223,
+        "v_BgwzTUxJaeU_c008": 0.27008909112754714,
+        "v_BgwzTUxJaeU_c012": 0.26717700301157143,
+        "v_BgwzTUxJaeU_c014": 0.2785486379360515
+      }
+    },
+    "retrieval": {
+      "recall@1": null,
+      "recall@5": null,
+      "recall@10": null
+    },
+    "degradation_study": null
+  },
+  "trackeval": {
+    "do_preproc": false,
+    "classes_to_eval": [
+      "pedestrian"
+    ],
+    "metric": "HOTA (mean over alpha thresholds) + CLEAR + Identity"
+  },
+  "provenance": {
+    "gt_set": "SportsMOT-basketball-val",
+    "tracker": "bytetrack",
+    "seed": 13,
+    "detector": {
+      "model": "yolo",
+      "weights": "yolov8m.pt",
+      "conf": 0.25,
+      "iou": 0.7,
+      "imgsz": 1280,
+      "device": "mps",
+      "person_class": 0,
+      "fine_tuned": false,
+      "note": "COCO-pretrained person class as athlete proxy \u2014 not fine-tuned on SportsMOT."
+    },
+    "tracker_params": {
+      "min_conf": 0.1,
+      "track_thresh": 0.45,
+      "match_thresh": 0.8,
+      "track_buffer": 25
+    },
+    "caps": {
+      "max_sequences": null,
+      "max_frames": null
+    },
+    "versions": {
+      "torch": "2.13.0",
+      "torchvision": "0.28.0",
+      "ultralytics": "8.4.104",
+      "boxmot": "22.0.0",
+      "trackeval": "1.0.dev1",
+      "numpy": "2.4.6",
+      "opencv-python": "4.13.0.92"
+    },
+    "device_info": {
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "machine": "arm64"
+    },
+    "sequences": [
+      {
+        "name": "v_00HRwkvvjtQ_c001",
+        "frames": 1162,
+        "track_rows": 28264,
+        "n_ids": 331,
+        "seconds": 124.92,
+        "fps": 9.3
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c003",
+        "frames": 1161,
+        "track_rows": 26070,
+        "n_ids": 363,
+        "seconds": 128.9,
+        "fps": 9.01
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c005",
+        "frames": 594,
+        "track_rows": 12797,
+        "n_ids": 198,
+        "seconds": 66.41,
+        "fps": 8.94
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c007",
+        "frames": 707,
+        "track_rows": 12153,
+        "n_ids": 220,
+        "seconds": 67.62,
+        "fps": 10.46
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c008",
+        "frames": 972,
+        "track_rows": 19845,
+        "n_ids": 210,
+        "seconds": 125.43,
+        "fps": 7.75
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c011",
+        "frames": 734,
+        "track_rows": 13921,
+        "n_ids": 228,
+        "seconds": 132.64,
+        "fps": 5.53
+      },
+      {
+        "name": "v_4r8QL_wglzQ_c001",
+        "frames": 886,
+        "track_rows": 13531,
+        "n_ids": 158,
+        "seconds": 210.97,
+        "fps": 4.2
+      },
+      {
+        "name": "v_5ekaksddqrc_c001",
+        "frames": 550,
+        "track_rows": 11063,
+        "n_ids": 147,
+        "seconds": 127.29,
+        "fps": 4.32
+      },
+      {
+        "name": "v_5ekaksddqrc_c002",
+        "frames": 632,
+        "track_rows": 13049,
+        "n_ids": 155,
+        "seconds": 131.97,
+        "fps": 4.79
+      },
+      {
+        "name": "v_5ekaksddqrc_c003",
+        "frames": 1215,
+        "track_rows": 26831,
+        "n_ids": 249,
+        "seconds": 325.23,
+        "fps": 3.74
+      },
+      {
+        "name": "v_5ekaksddqrc_c004",
+        "frames": 824,
+        "track_rows": 16634,
+        "n_ids": 180,
+        "seconds": 124.27,
+        "fps": 6.63
+      },
+      {
+        "name": "v_5ekaksddqrc_c005",
+        "frames": 1000,
+        "track_rows": 22766,
+        "n_ids": 174,
+        "seconds": 102.29,
+        "fps": 9.78
+      },
+      {
+        "name": "v_BgwzTUxJaeU_c008",
+        "frames": 500,
+        "track_rows": 10776,
+        "n_ids": 172,
+        "seconds": 54.26,
+        "fps": 9.22
+      },
+      {
+        "name": "v_BgwzTUxJaeU_c012",
+        "frames": 620,
+        "track_rows": 13181,
+        "n_ids": 190,
+        "seconds": 88.54,
+        "fps": 7.0
+      },
+      {
+        "name": "v_BgwzTUxJaeU_c014",
+        "frames": 1000,
+        "track_rows": 21211,
+        "n_ids": 235,
+        "seconds": 225.12,
+        "fps": 4.44
+      }
+    ],
+    "totals": {
+      "frames": 12557,
+      "seconds": 2035.86,
+      "fps": 6.17
+    }
+  },
+  "caveats": [
+    "Detector is COCO-pretrained (person class) as an athlete proxy \u2014 NOT fine-tuned on SportsMOT; referees/bench/crowd it calls 'person' are false positives vs athlete-only GT and depress DetA.",
+    "ByteTrack is motion-only (Kalman + IoU). SportsMOT shows motion-only underperforms on sports \u2014 this is the intended floor before the BoT-SORT/appearance ablation.",
+    "HOTA is on the val split (test GT is withheld behind Codalab): comparable to published SportsMOT val baselines, not the test leaderboard.",
+    "TrackEval DO_PREPROC=False (SportsMOT has no distractor classes); CLASSES_TO_EVAL=['pedestrian'].",
+    "MPS inference is deterministic only same-machine / same-versions (seed fixed, versions pinned)."
+  ],
+  "notes": "Fill each result only when its stage is implemented and actually run. No fabricated numbers."
+}

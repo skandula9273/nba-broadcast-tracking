@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hooptrack"
+version = "0.0.0"
+description = "NBA broadcast -> tracking + play-embedding retrieval + a measured eval platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "AGPL-3.0-or-later" }  # inherited IF Ultralytics YOLO is used; revisit if RF-DETR/YOLOX chosen
+authors = [{ name = "Santosh Kandula" }]
+
+# Lower bounds only (honest re: not pinning to versions unverified here).
+# Exact versions are frozen via `make lock` -> requirements.lock, which is committed.
+dependencies = [
+  "numpy>=1.26",
+  "opencv-python>=4.9",
+  "pandas>=2.2",
+  "pyyaml>=6.0",
+  "pydantic>=2.6",
+  "pydantic-settings>=2.2",
+]
+
+[project.optional-dependencies]
+# The CV/ML stack. torch is environment-specific (CUDA build) — install per your GPU, then pin in the lock.
+cv = [
+  "torch>=2.2",
+  "torchvision>=0.17",
+  "ultralytics>=8.2",   # AGPL — see license note. Swap for rfdetr / yolox to avoid AGPL.
+  "boxmot>=10.0",       # ByteTrack / BoT-SORT / Deep-EIoU trackers + ReID
+]
+retrieve = [
+  "faiss-cpu>=1.8",     # or pgvector via psycopg (you know pgvector from SEC)
+]
+serve = [
+  "fastapi>=0.110",
+  "uvicorn>=0.29",
+  "httpx>=0.27",
+]
+track = [
+  # TrackEval is installed from git (not on PyPI in a stable form):
+  #   pip install git+https://github.com/JonathonLuiten/TrackEval.git
+]
+obs = [
+  "wandb>=0.17",
+]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.4",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hooptrack"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]

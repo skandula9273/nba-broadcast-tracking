@@ -1,0 +1,56 @@
+# V0 config — every field is an ablation lever. One variable at a time.
+# V0 scope: detection + tracking + HOTA on SportsMOT + the eval harness. No homography/retrieval yet.
+
+seed: 13
+
+detect:
+  model: yolo            # LOCKED for increment-01: YOLO/Ultralytics (AGPL) — see docs/increment-01
+  weights: null          # null -> concrete pretrained default resolved in detect/detector.py (recorded in JSON)
+  conf: 0.25
+  iou: 0.7
+  classes: [player, ball]
+  device: mps            # Apple M1 Pro; cpu | cuda:0 elsewhere
+  imgsz: 1280            # YOLO inference size (SportsMOT frames are 720p broadcast)
+  batch: 16              # frames per forward pass
+  person_class: 0        # COCO 'person' index — the athlete proxy (pretrained, NOT fine-tuned)
+
+track:
+  method: bytetrack      # bytetrack (V0 baseline) | botsort | deepeiou  (upgrade as a measured ablation)
+  min_conf: 0.1          # low-score association gate
+  use_reid: false        # appearance fusion off for the ByteTrack baseline; on for botsort/deepeiou
+  track_thresh: 0.45     # high-score association gate
+  match_thresh: 0.8      # IoU match threshold
+  track_buffer: 25       # frames a lost track survives before deletion
+
+homography:              # V1
+  method: kalicalib
+  enabled: false
+
+reid:                    # V1
+  model: osnet
+  enabled: false
+
+embedding:               # V1 — the centerpiece
+  enabled: false
+  arch: trajectory_transformer   # trajectory_transformer | baller2vec
+  dim: 128
+  objective: contrastive         # contrastive | denoising | masked
+  window_seconds: 8
+
+retrieval:               # V1
+  enabled: false
+  index: faiss           # faiss | pgvector
+  top_k: 10
+
+eval:
+  # V0 metric surface. Paths are set once data/ is prepared.
+  dataset: sportsmot
+  data_dir: data/sportsmot
+  split: basketball             # sport category
+  mot_split: val               # public GT (test is withheld behind Codalab)
+  benchmark: SportsMOT         # TrackEval BENCHMARK -> folder SportsMOT-basketball-val
+  metrics: [hota, mota, idf1]  # via TrackEval; detection mAP added at the detect stage
+  retrieval_ks: [1, 5, 10]     # recall@k for V1
+  out_dir: eval_results
+  max_sequences: null          # smoke lever: cap #sequences (null = full basketball-val)
+  max_frames: null             # smoke lever: cap frames/sequence (null = all)

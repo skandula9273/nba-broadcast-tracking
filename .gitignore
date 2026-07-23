@@ -1,0 +1,28 @@
+# secrets
+.env
+.env.*
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# data + weights + video (large / licensed — never commit)
+data/
+*.mp4
+*.mov
+*.mkv
+*.pt
+*.onnx
+*.engine
+*.pth
+weights/
+
+# experiment tracking
+wandb/
+
+# committed by design (do NOT ignore): eval_results/*.json, requirements.lock, configs/*.yaml
