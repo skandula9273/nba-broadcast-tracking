@@ -1,0 +1,58 @@
+# V0 ablation — increment-02: swap ByteTrack -> BoT-SORT. ONE variable changed vs configs/v0.yaml
+# (track.method + use_reid). Detector and all else are byte-for-byte identical, so any HOTA delta is
+# attributable to the tracker (motion-only -> motion + appearance/OSNet ReID + camera-motion compensation).
+
+seed: 13
+
+detect:
+  model: yolo            # identical to v0.yaml
+  weights: null
+  conf: 0.25
+  iou: 0.7
+  classes: [player, ball]
+  device: mps
+  imgsz: 1280
+  batch: 16
+  person_class: 0
+
+track:
+  method: botsort        # <-- the one variable (v0.yaml: bytetrack)
+  use_reid: true         # <-- BoT-SORT uses appearance; ByteTrack did not
+  min_conf: 0.1
+  track_thresh: 0.45
+  match_thresh: 0.8
+  track_buffer: 25
+  device: mps            # device for the OSNet ReID model
+  reid_weights: osnet_x0_25_msmt17.pt
+
+homography:
+  method: kalicalib
+  enabled: false
+
+reid:
+  model: osnet
+  enabled: false
+
+embedding:
+  enabled: false
+  arch: trajectory_transformer
+  dim: 128
+  objective: contrastive
+  window_seconds: 8
+
+retrieval:
+  enabled: false
+  index: faiss
+  top_k: 10
+
+eval:
+  dataset: sportsmot
+  data_dir: data/sportsmot
+  split: basketball
+  mot_split: val
+  benchmark: SportsMOT
+  metrics: [hota, mota, idf1]
+  retrieval_ks: [1, 5, 10]
+  out_dir: eval_results
+  max_sequences: null
+  max_frames: null

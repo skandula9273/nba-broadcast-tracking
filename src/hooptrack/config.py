@@ -41,11 +41,14 @@ class DetectConfig(BaseModel):
 class TrackConfig(BaseModel):
     method: str = "bytetrack"            # bytetrack | botsort | deepeiou
     min_conf: float = 0.1                # boxmot ByteTrack low-score gate (2nd association stage)
-    use_reid: bool = False               # appearance fusion off for the ByteTrack baseline
+    use_reid: bool = False               # appearance fusion off for ByteTrack; on for botsort
     # boxmot ByteTrack levers (names verified against boxmot 22). frame_rate is taken per-sequence.
     track_thresh: float = 0.45           # high-score gate (1st association stage)
     match_thresh: float = 0.8            # IoU match threshold
     track_buffer: int = 25               # frames a lost track is kept before deletion
+    # BoT-SORT (appearance + camera-motion) levers; boxmot's tuned botsort.yaml drives the thresholds.
+    device: str = "mps"                  # device for the ReID model (mps | cpu | cuda:0)
+    reid_weights: str = "osnet_x0_25_msmt17.pt"   # OSNet ReID weight (boxmot auto-downloads)
 
 
 class HomographyConfig(BaseModel):

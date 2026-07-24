@@ -1,0 +1,217 @@
+# Depth round — hooptrack (NBA broadcast tracking)
+
+A running notes file for the depth-round interview (an interviewer picks this project and drills it for
+~45 min: *did you actually do the work, and do you understand the choices you made?*). Also the draft of
+the eventual writeup. Update it the moment a decision is made, not after.
+
+**Format for each decision:** the choice → what it produced (outcome) → alternatives considered → the
+tradeoff → what I'd do differently.
+
+**Framing note (say this if they treat it like a finished product):** this is a *measured eval platform*
+first, a tracker second. The centerpiece — the play-embedding model and the reconstructed-vs-ground-truth
+degradation study — is still ahead (V1). What exists today is the harness, the one shared pipeline, and the
+first honest public-benchmark number that every later method must beat. The value on display right now is
+**measurement discipline**, not a state-of-the-art tracker. Don't oversell the 0.30.
+
+---
+
+## Part 1 — What was actually built (the work, in order)
+
+The order is itself a decision: **the eval harness stands up before any modeling** (the project's top
+ordering rule). Nothing here is trained; it's the machinery that can *grade* a model against a public
+benchmark, plus the simplest honest baseline run through it.
+
+1. **Read the contract, grounded the environment.** Confirmed pre-V0 (every stage a `NotImplementedError`
+   skeleton). Probed the machine *before* planning: Apple **M1 Pro / MPS, no CUDA**; PyPI/HF/GitHub
+   reachable; 94 GB free. That decided "run a subset on-device," not "assume a GPU host."
+2. **Resolved the owner-decisions up front.** Detector = **YOLO (AGPL)** (a repo-license call); scope =
+   **full basketball-val**. Locked before writing code so the first `pip install` pinned the right stack.
+3. **Installed + pinned the CV stack, then verified every third-party API against the *installed* version**
+   (rule #1 — no fake APIs). This caught real surprises before I built on them: boxmot 22 moved ByteTrack
+   to `boxmot.trackers.bbox.bytetrack`; `TrackResults` is an ndarray subclass with `.id/.xyxy/.conf`;
+   TrackEval's `MotChallenge2DBox` needs a header'd seqmap and reads the GT class from column 7.
+4. **Built the data path** (`ingest/fetch.py`): pulled the **official** `MCG-NJU/SportsMOT` `val.tar`
+   (6.6 GB) from HuggingFace — one archive, not the 40 GB monolith — selectively extracted the **15
+   basketball-val sequences (12,557 frames)**, and built the TrackEval GT tree + seqmap + a provenance
+   manifest, following the authors' own `sportsmot_to_trackeval.py` layout. No scraping/relabeling; `data/`
+   is gitignored.
+5. **Wired the TrackEval adapter** (`eval/trackeval_adapter.py`) as the *only* module that imports
+   TrackEval (lazily), so the pure-logic parts unit-test with no CV stack.
+6. **Proved the adapter before trusting it.** Fed **GT as if it were the tracker prediction** → **HOTA =
+   1.000**. This is the honest wiring check: if perfect input doesn't score perfectly, the harness is
+   broken, and no real number can be believed.
+7. **Built detect + track through the ONE shared pipeline** (`pipeline.py`): YOLOv8m on MPS (person class)
+   → boxmot ByteTrack (fresh instance per sequence). The eval scores exactly the path a deployed API would
+   run.
+8. **Smoke-tested end-to-end on 1 sequence**, then ran the **full 15-sequence basketball-val** → the first
+   committed HOTA JSON (`eval_results/eval_*.json`).
+9. **Wrote it down and locked it:** a conceptual+technical explainer (`docs/increment-01-...md`), unit tests
+   (7 passing, no CV stack), a pinned `requirements.lock` (TrackEval by git SHA), and the first sole-author
+   commit.
+
+**The three failure modes I hit and debugged** (the "tell me about a bug" answers — all found by *running*
+the real thing, not assuming):
+- **TrackEval uses `np.float`/`np.int`/`np.bool`**, removed in NumPy 2.x (we're on 2.4.6). Fixed with a
+  documented compat shim that restores the exact builtin aliases; the vendored TrackEval runs unmodified.
+  *Lesson:* when a pinned dependency predates a breaking upstream change, make the real API work — don't
+  fork it or fake around it.
+- **The combined-results key is `COMBINED_SEQ`** (singular) in trackeval 1.0.dev1, not the `COMBINED_SEQS`
+  I assumed. Found by introspecting the actual return dict; the adapter now accepts both. *Lesson:* verify
+  the shape of what a library returns; don't code to the shape you remember.
+- **macOS `._` AppleDouble files inside the tar** inflated the manifest to 25,114 frames and broke image
+  decode. The real count is **12,557**. Caught because the run's own totals didn't match the manifest —
+  an **internal-consistency check surfaced it**, not a crash. Filtered them in the reader + extractor,
+  cleaned 12,617 files, corrected the manifest. *Lesson:* cross-check independently-derived counts; a
+  metadata bug that doesn't crash is the dangerous kind.
+
+---
+
+## Part 2 — Decision log (choice → outcome → alternatives → tradeoff)
+
+### Eval harness before any modeling — smallest slice to a verifiable public number
+- **Outcome:** a working detect→track→HOTA→committed-JSON loop with a real number (0.301) before a single
+  weight was trained. The platform can now grade every future change.
+- **Alternatives:** build a model first and bolt on evaluation later (the common order).
+- **Tradeoff:** slower to something that *looks* impressive; but it means every later number is trustworthy
+  by construction and attributable to one change. This is the SEC project's lesson applied.
+
+### Detector — YOLOv8m (Ultralytics), COCO-pretrained
+- **Outcome:** clean integration; the `person` class as an athlete proxy. **DetA 0.325** — held down by
+  false positives (below).
+- **Alternatives:** RF-DETR (Apache-2.0, better generalization), YOLOX (MIT). Both avoid AGPL.
+- **Tradeoff:** YOLO is the documented SportsMOT/SoccerNet baseline recipe and CoreML-exportable (the Apple
+  angle), but **AGPL-3.0 makes the whole repo AGPL** (blocks commercialization; fine for an open
+  portfolio). Kept a config lever (`detect.model`) so the license/generalization ablation stays open.
+
+### Pretrained, NOT fine-tuned — "person" ≠ "athlete" (the deliberate floor)
+- **Outcome:** measured **~24 person boxes/frame against ~10 on-court athletes** — the extra ~14 are
+  referees, bench, and crowd that COCO calls "person" but SportsMOT GT excludes. This is *why* DetA is low
+  and **MOTA is negative (−0.395)**.
+- **Alternatives:** fine-tune the detector on SportsMOT first (bigger DetA, but a training job — and it
+  gold-plates the enabler, which the design doc explicitly warns against).
+- **Tradeoff:** an honest floor + a named lever beats a tuned number with no baseline. Fine-tuning is a
+  *later measured variable*, not a prerequisite. Reported as-is (rule #2).
+
+### Tracker — ByteTrack (motion-only), the honest floor
+- **Outcome:** **AssA 0.279, 901 ID-switches, 2017 fragmentations** — motion-only association can't hold
+  identity through fast, non-linear basketball motion and mutual occlusion.
+- **Alternatives:** BoT-SORT / Deep-EIoU (motion + appearance + camera-motion compensation).
+- **Tradeoff:** ByteTrack needs no training and is the simplest thing that works (rule #7 — simpler first).
+  SportsMOT's own paper shows motion-only underperforms on sports, so this is deliberately the floor. The
+  appearance tracker is the *next* one-variable ablation.
+
+### Increment-02 — ByteTrack → BoT-SORT (the first measured ablation; my prior was wrong)
+- **Outcome:** HOTA **0.301 → 0.375** (+0.073), DetA +0.11, AssA +0.04, MOTA **−0.395 → +0.113** (flipped
+  positive), IDSW 901 → 728, Frag 2017 → 2648, ~3× slower (6.2 → 2.1 fps). One variable: `track.method`.
+- **The wrong prediction (the depth-round answer to "what surprised you"):** I predicted DetA was *capped*
+  — same detections in, so only association could improve. Wrong. DetA/MOTA are scored on the tracker's
+  **output tracks**, and BoT-SORT's stricter confirmation (higher start thresholds + `min_hits` + appearance/
+  CMC gating) suppresses the crowd-FP tracks that motion-only ByteTrack blindly emits. **A tracker's
+  confirmation policy is itself a precision lever** — not a passive detection consumer.
+- **The trade, not a pure win:** fewer ID-switches (appearance holding identity) but *more* fragmentation
+  (stricter confirmation drops briefly-low-confidence athletes). Net AssA up.
+- **Honest caveat:** this is method-vs-method — it doesn't isolate *why* (thresholds vs appearance vs CMC).
+  Next: ByteTrack at BoT-SORT's thresholds, and BoT-SORT with reid/cmc off, each one variable, to attribute
+  the gain (and possibly keep ByteTrack's 3× speed if thresholds explain most of it).
+- **Would-do-differently:** predict less, measure first — and design the ablation to isolate the driver up
+  front, not method-bundle vs method-bundle.
+
+### Headline metric — HOTA (not MOTA or IDF1)
+- **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
+  the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
+  FP > GT. A metric that goes negative on a partially-working system is a bad headline.
+- **Alternatives:** MOTA (detection-dominated), IDF1 (identity-dominated).
+- **Tradeoff:** HOTA balances detection and association explicitly and correlates with human judgment; it's
+  the SportsMOT / modern-MOT standard. We still report MOTA/IDF1 — the *split* is the story.
+
+### Benchmark split — SportsMOT val (not test)
+- **Outcome:** a locally reproducible number.
+- **Alternatives:** test (leaderboard).
+- **Tradeoff:** test GT is withheld behind Codalab, so a committed, one-command-reproducible HOTA needs
+  val. Comparable to *published val baselines*, not the leaderboard — stated in the JSON `caveats`.
+
+### One shared pipeline — eval and serve call the same path
+- **Outcome:** the committed 0.301 describes the exact code a deployed API would run.
+- **Alternatives:** a separate eval-only path (faster to hack).
+- **Tradeoff:** less flexibility (eval can't shortcut a stage); worth it — this is the single most
+  important honesty decision in the codebase (again, the SEC lesson).
+
+### `DO_PREPROC=False` in TrackEval
+- **Outcome:** all GT boxes scored as-is.
+- **Alternatives:** the MOT17 default `True` (distractor-class removal + zero-marked filtering).
+- **Tradeoff:** SportsMOT has no distractor classes; `False` is the authors' comparable setting. Verified
+  against the installed TrackEval source, not assumed.
+
+### Frames as file paths (not decoded pixels)
+- **Outcome:** a 1500-frame 720p sequence costs kilobytes in the pipeline; the detector reads images lazily
+  in mini-batches. No OOM on long sequences.
+- **Alternatives:** load whole sequences into memory (a 1500-frame clip ≈ 4 GB decoded).
+- **Tradeoff:** two disk reads for a few stages vs. blowing up memory. Easy call.
+
+### Blank canvas for the motion-only tracker
+- **Outcome:** ByteTrack runs correctly without ever touching pixels; boxmot's shape-validation is
+  satisfied by a zero canvas sized to the sequence.
+- **Alternatives:** thread real frames through (needed for appearance trackers, wasteful for ByteTrack).
+- **Tradeoff:** honest (ByteTrack genuinely ignores pixels) and fast. The `track(dets, frames)` signature
+  already anticipates BoT-SORT needing real pixels — the interface didn't have to change for the next step.
+
+### Eval scores exactly what was tracked
+- **Outcome:** the harness writes a seqmap from the produced tracker files, so it's robust to smoke caps
+  and partial runs; for the full run it's all 15. The JSON records `n_sequences_evaluated` so a capped run
+  can never be misread as the full split.
+- **Alternatives:** always eval the full GT seqmap (crashes if any sequence is missing).
+- **Tradeoff:** none worth mentioning — it's strictly more honest and more robust.
+
+---
+
+## Part 3 — The questions they'd actually ask (and my answers)
+
+### "What was your baseline, and is 0.30 good?"
+It's a **floor, not a target** — and low *on purpose*. The story is in the split: **LocA 0.84** (matched
+boxes localize well — geometry works), **DetA 0.33** (dragged by ~14 crowd/bench false positives per
+frame from a COCO detector that was never told what an "athlete" is), **AssA 0.28** (motion-only
+association fragments identity on fast basketball). The public leaderboard is far higher, but those use
+detectors *trained on SportsMOT* and score the *test* set. The distance from the leaderboard isn't failure
+— it's the exact headroom the next two measured steps exist to close.
+
+### "Tell me about a failure mode you didn't expect and how you debugged it."
+The manifest said 25,114 frames; the tracking run's own totals said 12,557. I didn't trust either — I
+looked for *why they disagreed*. macOS had written `._`-prefixed AppleDouble twins next to every image
+inside the tar; `pathlib.glob("*.jpg")` counted them (doubling the manifest) while `ls` hid them, and the
+image decoder choked on them. Fixed at the source (skip hidden files on extract + read), cleaned 12,617
+files, corrected the manifest. The tell was an **internal-consistency check**, not a crash — the dangerous
+bugs are the ones that produce a plausible wrong number.
+
+### "You depend on TrackEval — what happened when you first ran it?"
+It crashed on `np.float`, which NumPy removed in 1.24 (we're on 2.4.6). The wrong fix is to downgrade NumPy
+(breaks torch/ultralytics) or fork TrackEval. The right fix: a small compat shim that restores the exact
+builtin aliases (`np.float = float`, etc.) — behavior-preserving, keeps the pinned TrackEval running
+unmodified, documented as such. Rule #1 is "make the real API work," not "avoid the hard API."
+
+### "What's your validation strategy, and how do you know the harness itself is right?"
+- **Public benchmark (SportsMOT), scored through the same pipeline the API would use** — never a
+  second eval-only path.
+- **A wiring check that can't lie:** GT-as-tracker → HOTA 1.000. If perfect input doesn't score perfectly,
+  nothing downstream is trustworthy.
+- **The harness can't fabricate:** unrun stages are written as `null` + a `status` string; a scaffold run
+  can't be misread as a result.
+- **Reproducible:** fixed seed, pinned lockfile (TrackEval by git SHA), every knob a config lever,
+  timestamped JSON committed per run, one-command rerun.
+
+### "What would you do next, and why that order?"
+In priority order, because the *data* points here: **(1) fine-tune the detector on SportsMOT** — DetA and
+the negative MOTA are both the crowd-FP problem, the dominant lever; **(2) swap ByteTrack → BoT-SORT** —
+attack the 901 ID-switches with appearance + camera-motion compensation. Each is *one variable* changed
+against the committed 0.301, re-run with `make track && make eval`, its own timestamped JSON — so any
+improvement is a measured delta, not an assertion. Only then move down the pipeline (homography → re-ID →
+the embedding core → the degradation study), each measured before the next begins.
+
+---
+
+## Meta-answer — "how did you keep yourself honest?"
+A written engineering contract with non-negotiable rules — no fake APIs, never cherry-pick numbers, pair
+every choice with its reason, one variable per ablation, reproducible by default — and a design doc where
+scope deviations need a dated amendment. Concretely: I verified every library API against its installed
+version before building on it, proved the metric harness with a perfect-input check before trusting a real
+number, and committed the honest 0.301 (with a *negative* MOTA) rather than a tuned figure. The number is
+a floor that names its own levers; that's the point.

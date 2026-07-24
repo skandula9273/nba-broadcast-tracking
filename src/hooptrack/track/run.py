@@ -111,12 +111,7 @@ def run(cfg: Config) -> dict:
             "fine_tuned": False,
             "note": "COCO-pretrained person class as athlete proxy — not fine-tuned on SportsMOT.",
         },
-        "tracker_params": {
-            "min_conf": cfg.track.min_conf,
-            "track_thresh": cfg.track.track_thresh,
-            "match_thresh": cfg.track.match_thresh,
-            "track_buffer": cfg.track.track_buffer,
-        },
+        "tracker_params": tracker.params(),
         "caps": {"max_sequences": cfg.eval.max_sequences, "max_frames": cfg.eval.max_frames},
         "versions": _versions(),
         "device_info": {"platform": platform.platform(), "machine": platform.machine()},
