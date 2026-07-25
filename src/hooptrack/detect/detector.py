@@ -12,7 +12,11 @@ measured ablation. API verified against ultralytics 8.4 (rule #1).
 """
 from __future__ import annotations
 
-from ..config import DetectConfig
+import hashlib
+import json
+from pathlib import Path
+
+from ..config import Config, DetectConfig
 from ..pipeline import Detection
 
 # Resolved when detect.weights is null. COCO-pretrained; recorded verbatim in the eval JSON.
@@ -87,3 +91,37 @@ def build_detector(cfg: DetectConfig):
     if cfg.model == "yolo":
         return YOLODetector(cfg)
     raise NotImplementedError(f"detector '{cfg.model}' not wired yet (options: yolo | rfdetr | yolox).")
+
+
+def detection_cache_dir(cfg: Config) -> Path:
+    """Per-detector-config cache dir. A detector change (weights/conf/iou/imgsz/device/class) => new key."""
+    key = hashlib.sha1(json.dumps(cfg.detect.model_dump(), sort_keys=True).encode()).hexdigest()[:12]
+    return Path(cfg.eval.data_dir) / "_detcache" / key
+
+
+class CachingDetector:
+    """Wrap a detector; cache per-sequence detections keyed by detector config.
+
+    Makes tracker-only ablations cheap (detect once, re-associate many) and guarantees *identical*
+    detections across variants — so a tracker A/B compares on the same boxes. Transparent: it implements
+    the `Detector` protocol, so the shared pipeline is unchanged. The detector's determinism means a cache
+    hit is byte-for-byte what re-running would produce (verified against the committed baseline).
+    """
+
+    def __init__(self, inner, cache_dir: str | Path) -> None:
+        self.inner = inner
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def detect(self, frames) -> list[Detection]:
+        name = getattr(frames, "name", None)
+        path = self.cache_dir / f"{name}.json" if name else None
+        if path is not None and path.exists():
+            data = json.loads(path.read_text())
+            return [Detection(frame=d["f"], cls=d["c"], xyxy=tuple(d["b"]), conf=d["s"]) for d in data]
+        dets = self.inner.detect(frames)
+        if path is not None:
+            path.write_text(
+                json.dumps([{"f": d.frame, "c": d.cls, "b": list(d.xyxy), "s": d.conf} for d in dets])
+            )
+        return dets

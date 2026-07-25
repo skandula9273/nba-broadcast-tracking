@@ -116,6 +116,33 @@ the real thing, not assuming):
 - **Would-do-differently:** predict less, measure first — and design the ablation to isolate the driver up
   front, not method-bundle vs method-bundle.
 
+### Increment-03 — attribution study: what drove the BoT-SORT win?
+**What was done (the work, in order):**
+1. Followed up increment-02's honest caveat ("method-bundle vs method-bundle doesn't say *why*") with a
+   proper decomposition — the SEC-style "measure the tool, don't assume the opportunity is yours."
+2. **Built the detection cache I had explicitly deferred in increment-02** (YAGNI then; the four
+   tracker-only runs here crossed the threshold). `CachingDetector` is config-keyed and transparent
+   (implements the `Detector` protocol, so the shared pipeline is untouched).
+3. **Reproduce-check before trusting it:** cached ByteTrack reproduced the committed baseline tracker
+   output **byte-for-byte** — the cache is lossless, so cached-detector ablations are trustworthy.
+4. Ran four one-variable configs on **identical detections**: `bytetrack_hi` (threshold 0.45→0.60),
+   `botsort_noreid` (appearance off), `botsort_nocmc` (CMC off), against the committed baseline + full.
+5. Built the decomposition table + attributed the +0.074 HOTA.
+
+**Outcome (the finding):** the +0.074 splits ~47% **detection threshold** (reachable on cheap motion-only
+ByteTrack: DetA 0.325→0.395, MOTA flips positive), ~46% BoT-SORT's **confirmation cascade**, and only
+**+0.005 appearance / ~0.000 CMC**. BoT-SORT's two marquee features buy nothing on basketball broadcast —
+*removing* them even improved MOTA (−CMC 0.156, −ReID 0.127 vs full 0.113). And ReID cost ~4× the
+association time (cached: ~95 vs ~22 fps) for that +0.005. The win is a *precision* effect (stricter
+confirmation drops crowd-FP tracks), not identity modelling.
+- **Alternatives:** accept the increment-02 bundle result and move on; or fine-tune the detector next
+  without understanding the tracker win.
+- **Tradeoff:** three extra runs (~2 h, cut by the cache) to *understand* the win vs. just banking it. Worth
+  it — it retired appearance/CMC as dead weight on this domain and pointed the next lever upstream
+  (detector, DetA ceiling 0.44), all measured.
+- **The depth-round lesson:** a method that "wins" isn't understood until you isolate *why*; here the two
+  features everyone reaches for (ReID, CMC) were inert, and a cheap threshold recovered half the gain.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
@@ -199,12 +226,13 @@ unmodified, documented as such. Rule #1 is "make the real API work," not "avoid 
   timestamped JSON committed per run, one-command rerun.
 
 ### "What would you do next, and why that order?"
-In priority order, because the *data* points here: **(1) fine-tune the detector on SportsMOT** — DetA and
-the negative MOTA are both the crowd-FP problem, the dominant lever; **(2) swap ByteTrack → BoT-SORT** —
-attack the 901 ID-switches with appearance + camera-motion compensation. Each is *one variable* changed
-against the committed 0.301, re-run with `make track && make eval`, its own timestamped JSON — so any
-improvement is a measured delta, not an assertion. Only then move down the pipeline (homography → re-ID →
-the embedding core → the degradation study), each measured before the next begins.
+The *data* dictates the order. The tracker is now done and understood (increment-02/03: BoT-SORT 0.375,
+and its win is stricter confirmation, not appearance/CMC). Every variant's best **DetA is still only
+0.44** — the COCO-pretrained "person" detector, never told what an athlete is, is the binding constraint.
+So next is **fine-tune the detector on SportsMOT** — the single biggest remaining HOTA lever — measured as
+one variable against the 0.375 floor. Only then move down the pipeline (homography → re-ID → the embedding
+core → the degradation study), each measured before the next begins. The through-line: I don't guess the
+next lever, I let the committed numbers point at it.
 
 ---
 

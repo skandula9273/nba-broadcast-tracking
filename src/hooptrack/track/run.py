@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 
 from ..config import Config, load_config
-from ..detect.detector import DEFAULT_WEIGHTS, build_detector
+from ..detect.detector import DEFAULT_WEIGHTS, CachingDetector, build_detector, detection_cache_dir
 from ..eval.trackeval_adapter import write_mot
 from ..ingest.frames import load_mot_sequence
 from ..pipeline import Pipeline
@@ -47,9 +47,14 @@ def _seed_everything(seed: int) -> None:
         pass
 
 
+def tracker_name(cfg: Config) -> str:
+    """Output/eval subdir name — distinguishes ablation variants (e.g. botsort_noreid) from track.method."""
+    return cfg.eval.tracker_name or cfg.track.method
+
+
 def tracker_output_dir(cfg: Config) -> Path:
     gt_set = f"{cfg.eval.benchmark}-{cfg.eval.eval_split}"
-    return Path(cfg.eval.data_dir) / "trackeval" / "trackers" / gt_set / cfg.track.method
+    return Path(cfg.eval.data_dir) / "trackeval" / "trackers" / gt_set / tracker_name(cfg)
 
 
 def _sequences(cfg: Config) -> list[str]:
@@ -70,6 +75,8 @@ def run(cfg: Config) -> dict:
     data_dir.mkdir(parents=True, exist_ok=True)
 
     detector = build_detector(cfg.detect)
+    if cfg.eval.cache_detections:
+        detector = CachingDetector(detector, detection_cache_dir(cfg))
     tracker = build_tracker(cfg.track)
     pipe = Pipeline(cfg=cfg, detector=detector, tracker=tracker)
 
@@ -98,7 +105,8 @@ def run(cfg: Config) -> dict:
     total_seconds = sum(s["seconds"] for s in seq_stats)
     run_stats = {
         "gt_set": f"{cfg.eval.benchmark}-{cfg.eval.eval_split}",
-        "tracker": cfg.track.method,
+        "tracker": tracker_name(cfg),
+        "cache_detections": cfg.eval.cache_detections,
         "seed": cfg.seed,
         "detector": {
             "model": cfg.detect.model,

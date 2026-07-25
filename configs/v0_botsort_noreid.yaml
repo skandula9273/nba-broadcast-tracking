@@ -1,0 +1,46 @@
+# Increment-03 attribution: BoT-SORT with appearance OFF (with_reid: false).
+# ONE variable vs configs/v0_botsort.yaml (track.use_reid). Isolates the OSNet-ReID contribution to
+# association (AssA / ID-switches). CMC stays on. Detector byte-identical (same detection cache).
+
+seed: 13
+
+detect:
+  model: yolo
+  weights: null
+  conf: 0.25
+  iou: 0.7
+  classes: [player, ball]
+  device: mps
+  imgsz: 1280
+  batch: 16
+  person_class: 0
+
+track:
+  method: botsort
+  use_reid: false         # <-- the one variable (v0_botsort.yaml: true)
+  use_cmc: true
+  min_conf: 0.1
+  track_thresh: 0.45
+  match_thresh: 0.8
+  track_buffer: 25
+  device: mps
+  reid_weights: osnet_x0_25_msmt17.pt
+
+homography: {method: kalicalib, enabled: false}
+reid: {model: osnet, enabled: false}
+embedding: {enabled: false, arch: trajectory_transformer, dim: 128, objective: contrastive, window_seconds: 8}
+retrieval: {enabled: false, index: faiss, top_k: 10}
+
+eval:
+  dataset: sportsmot
+  data_dir: data/sportsmot
+  split: basketball
+  mot_split: val
+  benchmark: SportsMOT
+  metrics: [hota, mota, idf1]
+  retrieval_ks: [1, 5, 10]
+  out_dir: eval_results
+  max_sequences: null
+  max_frames: null
+  cache_detections: true
+  tracker_name: botsort_noreid

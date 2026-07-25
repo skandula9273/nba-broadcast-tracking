@@ -1,0 +1,320 @@
+{
+  "timestamp": "2026-07-24T20:58:46.825487+00:00",
+  "increment": "01-tracking-baseline",
+  "status": "tracking measured \u2014 botsort_nocmc on SportsMOT-basketball-val (HOTA=0.3750)",
+  "dataset": {
+    "name": "sportsmot",
+    "gt_set": "SportsMOT-basketball-val",
+    "mot_split": "val",
+    "n_sequences_prepared": 15,
+    "n_sequences_evaluated": 15,
+    "sequences_evaluated": [
+      "v_00HRwkvvjtQ_c001",
+      "v_00HRwkvvjtQ_c003",
+      "v_00HRwkvvjtQ_c005",
+      "v_00HRwkvvjtQ_c007",
+      "v_00HRwkvvjtQ_c008",
+      "v_00HRwkvvjtQ_c011",
+      "v_4r8QL_wglzQ_c001",
+      "v_5ekaksddqrc_c001",
+      "v_5ekaksddqrc_c002",
+      "v_5ekaksddqrc_c003",
+      "v_5ekaksddqrc_c004",
+      "v_5ekaksddqrc_c005",
+      "v_BgwzTUxJaeU_c008",
+      "v_BgwzTUxJaeU_c012",
+      "v_BgwzTUxJaeU_c014"
+    ]
+  },
+  "config": {
+    "seed": 13,
+    "detect": {
+      "model": "yolo",
+      "weights": null,
+      "conf": 0.25,
+      "iou": 0.7,
+      "classes": [
+        "player",
+        "ball"
+      ],
+      "device": "mps",
+      "imgsz": 1280,
+      "batch": 16,
+      "person_class": 0
+    },
+    "track": {
+      "method": "botsort",
+      "min_conf": 0.1,
+      "use_reid": true,
+      "track_thresh": 0.45,
+      "match_thresh": 0.8,
+      "track_buffer": 25,
+      "use_cmc": false,
+      "device": "mps",
+      "reid_weights": "osnet_x0_25_msmt17.pt"
+    },
+    "homography": {
+      "method": "kalicalib",
+      "enabled": false
+    },
+    "reid": {
+      "model": "osnet",
+      "enabled": false
+    },
+    "embedding": {
+      "enabled": false,
+      "arch": "trajectory_transformer",
+      "dim": 128,
+      "objective": "contrastive",
+      "window_seconds": 8
+    },
+    "retrieval": {
+      "enabled": false,
+      "index": "faiss",
+      "top_k": 10
+    },
+    "eval": {
+      "dataset": "sportsmot",
+      "data_dir": "data/sportsmot",
+      "split": "basketball",
+      "mot_split": "val",
+      "benchmark": "SportsMOT",
+      "metrics": [
+        "hota",
+        "mota",
+        "idf1"
+      ],
+      "retrieval_ks": [
+        1,
+        5,
+        10
+      ],
+      "out_dir": "eval_results",
+      "max_sequences": null,
+      "max_frames": null,
+      "cache_detections": true,
+      "tracker_name": "botsort_nocmc"
+    }
+  },
+  "results": {
+    "detection_mAP": null,
+    "tracking": {
+      "HOTA": 0.3750247716249964,
+      "DetA": 0.4479742786679357,
+      "AssA": 0.3141386234026742,
+      "LocA": 0.8881812775776248,
+      "MOTA": 0.15561540079949507,
+      "MOTP": 0.8751861188567711,
+      "IDF1": 0.3508900799235542,
+      "IDSW": 769.0,
+      "Frag": 2694.0,
+      "per_seq_HOTA": {
+        "v_00HRwkvvjtQ_c001": 0.37331381135500236,
+        "v_00HRwkvvjtQ_c003": 0.41447223285941126,
+        "v_00HRwkvvjtQ_c005": 0.41638403089591397,
+        "v_00HRwkvvjtQ_c007": 0.3283995680618997,
+        "v_00HRwkvvjtQ_c008": 0.37840918306868904,
+        "v_00HRwkvvjtQ_c011": 0.34979573617116005,
+        "v_4r8QL_wglzQ_c001": 0.4505166495200489,
+        "v_5ekaksddqrc_c001": 0.450687101006006,
+        "v_5ekaksddqrc_c002": 0.3620418345235825,
+        "v_5ekaksddqrc_c003": 0.31127303215878044,
+        "v_5ekaksddqrc_c004": 0.3368229081748308,
+        "v_5ekaksddqrc_c005": 0.36020917556689735,
+        "v_BgwzTUxJaeU_c008": 0.40957466625200667,
+        "v_BgwzTUxJaeU_c012": 0.36740852041266303,
+        "v_BgwzTUxJaeU_c014": 0.3467639260447399
+      }
+    },
+    "retrieval": {
+      "recall@1": null,
+      "recall@5": null,
+      "recall@10": null
+    },
+    "degradation_study": null
+  },
+  "trackeval": {
+    "do_preproc": false,
+    "classes_to_eval": [
+      "pedestrian"
+    ],
+    "metric": "HOTA (mean over alpha thresholds) + CLEAR + Identity"
+  },
+  "provenance": {
+    "gt_set": "SportsMOT-basketball-val",
+    "tracker": "botsort_nocmc",
+    "cache_detections": true,
+    "seed": 13,
+    "detector": {
+      "model": "yolo",
+      "weights": "yolov8m.pt",
+      "conf": 0.25,
+      "iou": 0.7,
+      "imgsz": 1280,
+      "device": "mps",
+      "person_class": 0,
+      "fine_tuned": false,
+      "note": "COCO-pretrained person class as athlete proxy \u2014 not fine-tuned on SportsMOT."
+    },
+    "tracker_params": {
+      "method": "botsort",
+      "reid_weights": "osnet_x0_25_msmt17.pt",
+      "device": "mps",
+      "with_reid": true,
+      "use_cmc": false,
+      "config": "boxmot default botsort.yaml (tuned; thresholds fixed by pinned boxmot version)"
+    },
+    "caps": {
+      "max_sequences": null,
+      "max_frames": null
+    },
+    "versions": {
+      "torch": "2.13.0",
+      "torchvision": "0.28.0",
+      "ultralytics": "8.4.104",
+      "boxmot": "22.0.0",
+      "trackeval": "1.0.dev1",
+      "numpy": "2.4.6",
+      "opencv-python": "4.13.0.92"
+    },
+    "device_info": {
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "machine": "arm64"
+    },
+    "sequences": [
+      {
+        "name": "v_00HRwkvvjtQ_c001",
+        "frames": 1162,
+        "track_rows": 21158,
+        "n_ids": 178,
+        "seconds": 61.68,
+        "fps": 18.84
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c003",
+        "frames": 1161,
+        "track_rows": 18088,
+        "n_ids": 205,
+        "seconds": 56.1,
+        "fps": 20.69
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c005",
+        "frames": 594,
+        "track_rows": 8499,
+        "n_ids": 110,
+        "seconds": 27.88,
+        "fps": 21.31
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c007",
+        "frames": 707,
+        "track_rows": 8361,
+        "n_ids": 135,
+        "seconds": 31.71,
+        "fps": 22.3
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c008",
+        "frames": 972,
+        "track_rows": 14794,
+        "n_ids": 131,
+        "seconds": 45.68,
+        "fps": 21.28
+      },
+      {
+        "name": "v_00HRwkvvjtQ_c011",
+        "frames": 734,
+        "track_rows": 9668,
+        "n_ids": 136,
+        "seconds": 33.73,
+        "fps": 21.76
+      },
+      {
+        "name": "v_4r8QL_wglzQ_c001",
+        "frames": 886,
+        "track_rows": 11166,
+        "n_ids": 105,
+        "seconds": 38.61,
+        "fps": 22.95
+      },
+      {
+        "name": "v_5ekaksddqrc_c001",
+        "frames": 550,
+        "track_rows": 7961,
+        "n_ids": 82,
+        "seconds": 24.47,
+        "fps": 22.48
+      },
+      {
+        "name": "v_5ekaksddqrc_c002",
+        "frames": 632,
+        "track_rows": 9215,
+        "n_ids": 96,
+        "seconds": 28.51,
+        "fps": 22.17
+      },
+      {
+        "name": "v_5ekaksddqrc_c003",
+        "frames": 1215,
+        "track_rows": 19229,
+        "n_ids": 145,
+        "seconds": 55.52,
+        "fps": 21.88
+      },
+      {
+        "name": "v_5ekaksddqrc_c004",
+        "frames": 824,
+        "track_rows": 12021,
+        "n_ids": 118,
+        "seconds": 35.53,
+        "fps": 23.19
+      },
+      {
+        "name": "v_5ekaksddqrc_c005",
+        "frames": 1000,
+        "track_rows": 16378,
+        "n_ids": 114,
+        "seconds": 44.54,
+        "fps": 22.45
+      },
+      {
+        "name": "v_BgwzTUxJaeU_c008",
+        "frames": 500,
+        "track_rows": 7956,
+        "n_ids": 117,
+        "seconds": 23.94,
+        "fps": 20.88
+      },
+      {
+        "name": "v_BgwzTUxJaeU_c012",
+        "frames": 620,
+        "track_rows": 9515,
+        "n_ids": 119,
+        "seconds": 28.73,
+        "fps": 21.58
+      },
+      {
+        "name": "v_BgwzTUxJaeU_c014",
+        "frames": 1000,
+        "track_rows": 14835,
+        "n_ids": 143,
+        "seconds": 46.17,
+        "fps": 21.66
+      }
+    ],
+    "totals": {
+      "frames": 12557,
+      "seconds": 582.8,
+      "fps": 21.55
+    }
+  },
+  "caveats": [
+    "Detector is COCO-pretrained (person class) as an athlete proxy \u2014 NOT fine-tuned on SportsMOT; referees/bench/crowd it calls 'person' are false positives vs athlete-only GT and depress DetA.",
+    "ByteTrack is motion-only (Kalman + IoU). SportsMOT shows motion-only underperforms on sports \u2014 this is the intended floor before the BoT-SORT/appearance ablation.",
+    "HOTA is on the val split (test GT is withheld behind Codalab): comparable to published SportsMOT val baselines, not the test leaderboard.",
+    "TrackEval DO_PREPROC=False (SportsMOT has no distractor classes); CLASSES_TO_EVAL=['pedestrian'].",
+    "MPS inference is deterministic only same-machine / same-versions (seed fixed, versions pinned)."
+  ],
+  "notes": "Fill each result only when its stage is implemented and actually run. No fabricated numbers."
+}

@@ -36,14 +36,16 @@ CAVEATS = [
 
 def _paths(cfg: Config):
     gt_set = f"{cfg.eval.benchmark}-{cfg.eval.eval_split}"
+    name = cfg.eval.tracker_name or cfg.track.method  # ablation-variant subdir (matches track/run.py)
     te = Path(cfg.eval.data_dir) / "trackeval"
     return {
         "gt_set": gt_set,
+        "tracker_name": name,
         "gt_folder": te / "gt",
         "trackers_folder": te / "trackers",
         "seqmap": te / "gt" / "seqmaps" / f"{gt_set}.txt",
-        "tracker_data": te / "trackers" / gt_set / cfg.track.method / "data",
-        "run_stats": te / "trackers" / gt_set / cfg.track.method / "run_stats.json",
+        "tracker_data": te / "trackers" / gt_set / name / "data",
+        "run_stats": te / "trackers" / gt_set / name / "run_stats.json",
     }
 
 
@@ -68,7 +70,7 @@ def build_report(cfg: Config) -> dict:
             trackers_folder=p["trackers_folder"],
             benchmark=cfg.eval.benchmark,
             split=cfg.eval.eval_split,
-            tracker_name=cfg.track.method,
+            tracker_name=p["tracker_name"],
             seqmap_file=eval_seqmap,
             classes_to_eval=CLASSES_TO_EVAL,
             do_preproc=DO_PREPROC,
@@ -77,7 +79,7 @@ def build_report(cfg: Config) -> dict:
         if p["run_stats"].exists():
             provenance = json.loads(p["run_stats"].read_text())
         status = (
-            f"tracking measured — {cfg.track.method} on {p['gt_set']} "
+            f"tracking measured — {p['tracker_name']} on {p['gt_set']} "
             f"(HOTA={summary['HOTA']:.4f})"
         )
     else:

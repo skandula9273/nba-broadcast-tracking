@@ -120,8 +120,8 @@ class BotSortTracker:
             "method": "botsort",
             "reid_weights": self.cfg.reid_weights,
             "device": self.cfg.device,
-            "with_reid": True,
-            "use_cmc": True,
+            "with_reid": self.cfg.use_reid,
+            "use_cmc": self.cfg.use_cmc,
             "config": "boxmot default botsort.yaml (tuned; thresholds fixed by pinned boxmot version)",
         }
 
@@ -137,7 +137,7 @@ class BotSortTracker:
             reid_weights=Path(c.reid_weights),
             device=c.device,
             half=False,
-            tracker_kwargs={"frame_rate": fps},
+            tracker_kwargs={"frame_rate": fps, "with_reid": c.use_reid, "use_cmc": c.use_cmc},
         )
         return _boxmot_tracks(tracker, detections, frames, use_pixels=True)
 

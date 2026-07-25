@@ -47,6 +47,7 @@ class TrackConfig(BaseModel):
     match_thresh: float = 0.8            # IoU match threshold
     track_buffer: int = 25               # frames a lost track is kept before deletion
     # BoT-SORT (appearance + camera-motion) levers; boxmot's tuned botsort.yaml drives the thresholds.
+    use_cmc: bool = True                 # camera-motion compensation (BoT-SORT); off = isolate CMC's effect
     device: str = "mps"                  # device for the ReID model (mps | cpu | cuda:0)
     reid_weights: str = "osnet_x0_25_msmt17.pt"   # OSNet ReID weight (boxmot auto-downloads)
 
@@ -86,6 +87,8 @@ class EvalConfig(BaseModel):
     out_dir: str = "eval_results"
     max_sequences: int | None = None     # smoke lever: cap sequences (null = all); recorded in the JSON
     max_frames: int | None = None        # smoke lever: cap frames per sequence (null = all)
+    cache_detections: bool = True        # cache per-seq detections (keyed by detector cfg) -> cheap tracker ablations
+    tracker_name: str | None = None      # output/eval subdir name (null -> track.method); distinguishes ablation variants
 
     @property
     def eval_split(self) -> str:

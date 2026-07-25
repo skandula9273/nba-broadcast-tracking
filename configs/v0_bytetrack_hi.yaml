@@ -1,0 +1,44 @@
+# Increment-03 attribution: ByteTrack with a HIGH new-track threshold (0.45 -> 0.60).
+# ONE variable vs configs/v0.yaml (track.track_thresh). Tests how much of BoT-SORT's DetA/MOTA gain is
+# just "stop promoting low-confidence crowd detections to tracks" — reachable by the cheap motion-only
+# tracker, no appearance/CMC. Detector byte-identical (same detection cache).
+
+seed: 13
+
+detect:
+  model: yolo
+  weights: null
+  conf: 0.25
+  iou: 0.7
+  classes: [player, ball]
+  device: mps
+  imgsz: 1280
+  batch: 16
+  person_class: 0
+
+track:
+  method: bytetrack
+  min_conf: 0.1
+  use_reid: false
+  track_thresh: 0.60      # <-- the one variable (v0.yaml: 0.45); ~BoT-SORT's new_track_thresh
+  match_thresh: 0.8
+  track_buffer: 25
+
+homography: {method: kalicalib, enabled: false}
+reid: {model: osnet, enabled: false}
+embedding: {enabled: false, arch: trajectory_transformer, dim: 128, objective: contrastive, window_seconds: 8}
+retrieval: {enabled: false, index: faiss, top_k: 10}
+
+eval:
+  dataset: sportsmot
+  data_dir: data/sportsmot
+  split: basketball
+  mot_split: val
+  benchmark: SportsMOT
+  metrics: [hota, mota, idf1]
+  retrieval_ks: [1, 5, 10]
+  out_dir: eval_results
+  max_sequences: null
+  max_frames: null
+  cache_detections: true
+  tracker_name: bytetrack_hi
