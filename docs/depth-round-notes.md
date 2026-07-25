@@ -143,6 +143,35 @@ confirmation drops crowd-FP tracks), not identity modelling.
 - **The depth-round lesson:** a method that "wins" isn't understood until you isolate *why*; here the two
   features everyone reaches for (ReID, CMC) were inert, and a cheap threshold recovered half the gain.
 
+### Increment-04 — detector fine-tuning: the lever the data pointed at (and the MPS saga)
+**What was done (the work, in order):**
+1. Acted on increment-03's conclusion (DetA ceiling 0.44 = the detector). Built `detect/finetune.py`:
+   basketball-train MOT boxes → YOLO athlete labels (every 5th frame, 2,484 imgs), fine-tune yolov8m from
+   COCO, then a one-variable A/B config (`v0_finetuned.yaml`: swap weights, everything else identical).
+2. **Measured 1 epoch before committing hours** (as promised). It *failed loudly*: the Standard budget
+   (imgsz 960 / batch 8) diverged to **NaN losses** and thrashed the 16 GB unified memory (0.5s→26s/it).
+   The probe did its job.
+3. Diagnosed + fixed: **AMP off** (the MPS NaN cause), **batch 4 / imgsz 640** (fits memory), and a real
+   `save_dir` path bug (read `model.trainer.best` instead of a constructed path). Re-measured: clean, no
+   NaN, mAP50 0.34 after one epoch.
+4. Ran 20 epochs → detection **mAP50 0.987 / mAP50-95 0.795**; re-ran ByteTrack tracking with the fine-tuned
+   weights.
+
+**Outcome:** HOTA **0.301 → 0.473 (+0.172)**; **DetA 0.325 → 0.707** (doubled); **MOTA −0.40 → +0.87**.
+Fine-tuned + *cheap* ByteTrack (0.473) **beats the expensive BoT-SORT bundle (0.375)** — the detector lift
+is **2.3× the tracker lift**, exactly where increment-03 pointed.
+- **Alternatives:** keep gold-plating the tracker (Deep-EIoU); or accept the COCO detector. The data said
+  neither — the detector was the ceiling.
+- **Tradeoff / honesty:** the number is *mildly optimistic* (`best.pt` model-selected on the val set that
+  HOTA is scored on; weights never saw val frames) — a held-out test would be rigorous, but SportsMOT test
+  GT is withheld. Stated plainly. And IDSW *rose* (901→955): clean detections mean more real tracks to
+  confuse, so association quietly becomes the next relative lever.
+- **The depth-round lessons:** (1) the measured arc (baseline → tracker ablation → attribution → detector)
+  *earned* the conclusion — I didn't guess the lever, the committed numbers pointed at it. (2) **A warm
+  1-epoch probe under-predicts:** actual training was ~7.3 h vs the ~3 h the probe implied, because MPS
+  per-epoch time grows over a run — I own the ETA miss. (3) Measure before you spend: the probe caught a
+  NaN/OOM failure that would have wasted hours.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
@@ -226,13 +255,15 @@ unmodified, documented as such. Rule #1 is "make the real API work," not "avoid 
   timestamped JSON committed per run, one-command rerun.
 
 ### "What would you do next, and why that order?"
-The *data* dictates the order. The tracker is now done and understood (increment-02/03: BoT-SORT 0.375,
-and its win is stricter confirmation, not appearance/CMC). Every variant's best **DetA is still only
-0.44** — the COCO-pretrained "person" detector, never told what an athlete is, is the binding constraint.
-So next is **fine-tune the detector on SportsMOT** — the single biggest remaining HOTA lever — measured as
-one variable against the 0.375 floor. Only then move down the pipeline (homography → re-ID → the embedding
-core → the degradation study), each measured before the next begins. The through-line: I don't guess the
-next lever, I let the committed numbers point at it.
+The *data* dictated V0's order and delivered: tracker ablation (0.375) → attribution (the win is
+confirmation, not appearance/CMC) → **detector fine-tune, the lever the numbers pointed at → HOTA 0.473,
+DetA doubled**, and fine-tuned+ByteTrack beat the expensive BoT-SORT bundle. V0 is done (detection mAP
+0.987 + tracking HOTA 0.473, both committed). Next is **V1**: homography (court coords, reprojection error)
+→ re-ID (player identity) → the **embedding core** (the trained centerpiece, recall@k) → the
+**reconstructed-vs-GT degradation study** (the finding the whole project exists for), each measured before
+the next begins. One nuance the data just surfaced: on clean detections, IDSW rose — so association
+(dead weight on noisy boxes) may now matter, a hypothesis for a future ablation. The through-line: I don't
+guess the next lever, I let the committed numbers point at it.
 
 ---
 

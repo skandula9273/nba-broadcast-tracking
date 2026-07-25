@@ -24,5 +24,6 @@ weights/
 
 # experiment tracking
 wandb/
+runs/
 
 # committed by design (do NOT ignore): eval_results/*.json, requirements.lock, configs/*.yaml
