@@ -6,6 +6,11 @@
 amendment with rationale (same rule as the SEC project). Proposed choices below are marked with their reasoning;
 genuinely-open calls are collected in **Open decisions** for you to lock.
 
+**Amendment — 2026-07-25 (V0 floors locked).** V0 (detection + tracking + HOTA + eval harness) is complete and
+measured on SportsMOT **basketball-val**; the Success-criteria floors below are now locked to the committed
+numbers (see `eval_results/` and `docs/increment-01..04`). Detector = **YOLO/Ultralytics (AGPL)** — the
+license open-decision, resolved. V1 floors (homography, retrieval, degradation) lock as those stages land.
+
 ---
 
 ## Project
@@ -43,14 +48,15 @@ study, not a feature list — the same way the SEC project's value was a measure
 
 ## Success criteria
 
-The point is a verifiable number per stage and an honest degradation study — not one vanity metric. Floors below
-are **provisional and locked after the V0 baseline run** (no fabricated SOTA; report regressions as-is, like the
-SEC recall@5 0.44).
+The point is a verifiable number per stage and an honest degradation study — not one vanity metric. **V0 floors
+are LOCKED (2026-07-25)** to the measured numbers (no fabricated SOTA; reported as-is, like the SEC recall@5
+0.44). All V0 numbers are on SportsMOT **basketball-val** (test GT is withheld behind Codalab); V1 floors lock
+as those stages land.
 
-| Metric | V0 floor | Target | Source |
+| Metric | V0 floor (LOCKED) | Target | Source |
 |---|---|---|---|
-| Player/ball detection (mAP@50) | beat a trivial baseline; report as-is | approach published basketball-detection numbers | DeepSportradar / SportsMOT |
-| Multi-object tracking (**HOTA**) | report vs published SportsMOT baselines | competitive with a strong baseline tracker | SportsMOT (via TrackEval) |
+| Player/ball detection (mAP@50) | **0.987** (fine-tuned yolov8m, basketball-val; mAP50-95 0.795) — COCO-person baseline far below | approach published basketball-detection numbers | DeepSportradar / SportsMOT |
+| Multi-object tracking (**HOTA**) | **0.301** baseline (COCO + ByteTrack) → **0.473** best (fine-tuned + ByteTrack); BoT-SORT 0.375 | competitive with a strong baseline tracker | SportsMOT (via TrackEval) |
 | Homography reprojection error (px) | report | within a documented tolerance | DeepSportradar camera-calibration |
 | Retrieval (**recall@k**) | set a floor you'll report | beat a nearest-neighbor-on-hand-features baseline | held-out similar-play set |
 | Serving latency / FPS | measured | a real-time-ish or on-device number | measured traces |

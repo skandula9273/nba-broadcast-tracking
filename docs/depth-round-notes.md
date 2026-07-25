@@ -172,6 +172,19 @@ is **2.3× the tracker lift**, exactly where increment-03 pointed.
   per-epoch time grows over a run — I own the ETA miss. (3) Measure before you spend: the probe caught a
   NaN/OOM failure that would have wasted hours.
 
+### V0 complete — success floors locked (2026-07-25)
+**What was done:** after the measured V0 (increments 01–04), locked the design-doc Success-criteria floors
+to the committed numbers via a dated amendment: **detection mAP50 0.987** (fine-tuned yolov8m) and
+**tracking HOTA 0.301 baseline → 0.473 best**, all on SportsMOT basketball-val.
+- **Decision / outcome:** lock the *committed* numbers, not aspirational SOTA (the SEC honesty rule). The
+  baseline (0.301) is the floor every future change must beat; the best-so-far (0.473) is the current bar;
+  regressions become visible against a fixed line.
+- **Alternatives:** leave floors "provisional" (no accountability), or lock an aspirational target (invites
+  fudging). Rejected both.
+- **Tradeoff / honesty:** locking creates accountability — a future change that regresses is now obvious in
+  the JSON diff. Caveats carried into the amendment: all numbers are basketball-val (test GT withheld), and
+  the fine-tuned mAP is mildly optimistic (val-set model selection).
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
