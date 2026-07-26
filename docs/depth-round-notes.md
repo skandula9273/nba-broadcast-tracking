@@ -282,6 +282,37 @@ each link their own `libomp` on macOS; `KMP_DUPLICATE_LIB_OK=TRUE` lets them imp
 brute-force assertion doubles as the guard against silent OMP corruption. Matters for serving too (encode +
 search in one process). See `docs/increment-06b-embedding-core-trained.md`.
 
+### Increment-07 — the reconstructed-vs-GT degradation study (the headline finding)
+**What was done (the work, in order):**
+1. Framed it honestly: no dataset has aligned broadcast+SportVU truth, so a **controlled degradation** —
+   perturb clean GT possessions with the per-stage error budgets *already measured* (homography ~2px inc-05;
+   DetA 0.707 / Frag 1847; AssA 0.317 / IDSW 955 inc-04), one variable at a time. Query = degraded GT,
+   gallery = clean GT val, baseline = 1.0, so every drop is the reconstruction's cost. Reused the whole
+   harness (trained encoder + FAISS + recall@k); the "augmentation" is now a measured error model.
+2. Built `degrade.py` (jitter_ft, dropout+interp, id_swap, permute_players — each mapped to a measured stage)
+   + `study.py` (per-source sweeps + combined realistic point + a re-ID *sensitivity*, labelled unmeasured).
+
+**Outcome (three findings):**
+- **Cost concentrates in ONE stage — tracking association.** Jitter (homography+detection localization) costs
+  ~nothing (4 ft → r@1 0.999); fragmentation bridged by interp barely moves it; but each **ID-switch** costs
+  ~0.12–0.15 r@1. Combined realistic (0.5ft + 0.1 drop + 2 swaps): trained **r@1 0.68** vs 1.0 on GT. So
+  who-is-who over time is the bottleneck, not sub-pixel registration — a concrete steer.
+- **Honest reversal — the learned encoder is *more fragile* than the naive floor under reconstruction noise.**
+  The encoder that beat the floor on mirror (0.004→0.999) loses to it on id-swaps/permutation (combined 0.68
+  vs floor 0.99): the floor mean-pools raw coords → order-robust (and mirror-blind); the transformer is
+  order-sensitive and was trained only with order-*preserving* augmentations. Complementary failure modes,
+  not "floor wins" — and the fix is the same lever that bought mirror-invariance: add id-swap/permutation
+  augmentation.
+- **Player-identity (re-ID) is the dominant *unmeasured* risk** — 2 wrong players → r@1 0.81, full scramble →
+  0.02. Sensitivity only (stage unbuilt); it's why re-ID is next.
+- **Alternatives:** claim reconstruction "barely hurts" from the jitter/dropout results alone (misleading —
+  omits the order-corruption stages); or wait for aligned broadcast GT that doesn't exist. Rejected both.
+- **Tradeoff / honesty:** a controlled proxy with stated px→ft / IDSW→swaps mapping assumptions, not the real
+  end-to-end pipeline; the sweeps (not one point) carry the finding; the re-ID axis is labelled unmeasured.
+- **The depth-round lesson:** the study connected the perception error budgets to the retrieval cost they
+  impose, localized it to one stage, and *surprised* me (the fancy encoder is less robust than the baseline
+  where it wasn't trained to be) — then named the two next levers. Measuring beats assuming, again.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

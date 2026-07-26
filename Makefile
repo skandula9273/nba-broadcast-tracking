@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect track eval serve demo retrieve-corpus retrieve-floor retrieve-train test fmt lint
+.PHONY: help install lock data detect track eval serve demo retrieve-corpus retrieve-floor retrieve-train retrieve-study test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -37,6 +37,9 @@ retrieve-floor:  ## recall@k FLOOR — hand-feature baseline, no learning (incre
 
 retrieve-train:  ## TRAINED trajectory transformer — contrastive InfoNCE, recall@k (increment-06b)
 	python -m hooptrack.retrieve.train --n-games 12 --epochs 300
+
+retrieve-study:  ## reconstructed-vs-GT degradation study (increment-07, the headline finding)
+	python -m hooptrack.retrieve.study --n-games 12 --epochs 300
 
 test:  ## run the test suite
 	pytest -q

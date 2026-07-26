@@ -11,6 +11,18 @@ measured on SportsMOT **basketball-val**; the Success-criteria floors below are 
 numbers (see `eval_results/` and `docs/increment-01..04`). Detector = **YOLO/Ultralytics (AGPL)** — the
 license open-decision, resolved. V1 floors (homography, retrieval, degradation) lock as those stages land.
 
+**Amendment — 2026-07-26 (V1 embedding core + degradation study landed; those floors locked).** Homography
+solver measured (inc-05; auto-registration front-end deferred as an enabler). The retrieval floor (inc-06a),
+the trained encoder (inc-06b), and the degradation study (inc-07) are complete; the Retrieval and
+Analytics-degradation rows below lock to the committed numbers (`eval_results/retrieval_*`, `degradation_*`;
+`docs/increment-05..07`). **Retrieval:** on a held-out 12-game split, overall recall@1 **0.41 floor → 0.98
+trained** (court-mirror 0.004 → 0.999; a `p_mirror=0` ablation attributes the win to the mirror augmentation),
+FAISS-indexed and verified to reproduce brute-force. **Degradation:** the reconstruction cost concentrates in
+**tracking association** (ID-switches) — at the measured budget, trained recall@1 **1.0 → 0.68** (floor 0.99),
+while jitter/dropout cost ~nothing; and the learned encoder is *more fragile* to order-corruption than the
+naive floor (it's order-sensitive). re-ID is the dominant *unmeasured* risk. Remaining V1: add
+id-swap/permutation augmentation and re-measure; build + measure re-ID; demo + writeup.
+
 ---
 
 ## Project
@@ -57,10 +69,10 @@ as those stages land.
 |---|---|---|---|
 | Player/ball detection (mAP@50) | **0.987** (fine-tuned yolov8m, basketball-val; mAP50-95 0.795) — COCO-person baseline far below | approach published basketball-detection numbers | DeepSportradar / SportsMOT |
 | Multi-object tracking (**HOTA**) | **0.301** baseline (COCO + ByteTrack) → **0.473** best (fine-tuned + ByteTrack); BoT-SORT 0.375 | competitive with a strong baseline tracker | SportsMOT (via TrackEval) |
-| Homography reprojection error (px) | report | within a documented tolerance | DeepSportradar camera-calibration |
-| Retrieval (**recall@k**) | set a floor you'll report | beat a nearest-neighbor-on-hand-features baseline | held-out similar-play set |
+| Homography reprojection error (px) | **2.1px** @ σ=3px keypoints (solver; 877px unregistered baseline) — auto front-end deferred | within a documented tolerance | DeepSportradar camera-calibration |
+| Retrieval (**recall@k**) | **LOCKED (2026-07-26):** overall recall@1 **0.41 floor → 0.98 trained** (court-mirror 0.004 → 0.999), held-out 12-game split, FAISS-verified | beat a nearest-neighbor-on-hand-features baseline ✓ (beaten + attributed) | held-out similar-play set (augmentation-SSL) |
 | Serving latency / FPS | measured | a real-time-ish or on-device number | measured traces |
-| **Analytics degradation** (reconstructed vs GT) | measured + explained | quantified, with the dominant error source named | the study |
+| **Analytics degradation** (reconstructed vs GT) | **LOCKED (2026-07-26):** cost concentrates in tracking association; at measured budget trained recall@1 **1.0 → 0.68** (floor 0.99); re-ID = dominant unmeasured risk | quantified, with the dominant error source named ✓ | the study (controlled degradation) |
 
 Headline results: **HOTA** (public, verifiable), **recall@k** (the trained core), and the **degradation study**.
 
