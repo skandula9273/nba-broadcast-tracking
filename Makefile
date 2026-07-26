@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect track eval serve demo test fmt lint
+.PHONY: help install lock data detect track eval serve demo retrieve-corpus retrieve-floor retrieve-train test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -28,6 +28,15 @@ serve:  ## launch the FastAPI service
 
 demo:  ## launch the demo UI (once built)
 	@echo "demo: build in demo/ (V2)"
+
+retrieve-corpus:  ## build the SportVU possession corpus (increment-06) into data/sportvu
+	python -c "import numpy as np; from hooptrack.retrieve.possessions import build_corpus; c,m=build_corpus(n_games=12,T=48,max_possessions=8000,cache_dir='data/sportvu'); np.savez('data/sportvu/corpus_g12_T48.npz',corpus=c,meta=np.array(m,dtype=object)); print('built',c.shape)"
+
+retrieve-floor:  ## recall@k FLOOR — hand-feature baseline, no learning (increment-06a)
+	python -m hooptrack.retrieve.run --n-games 12
+
+retrieve-train:  ## TRAINED trajectory transformer — contrastive InfoNCE, recall@k (increment-06b)
+	python -m hooptrack.retrieve.train --n-games 12 --epochs 300
 
 test:  ## run the test suite
 	pytest -q

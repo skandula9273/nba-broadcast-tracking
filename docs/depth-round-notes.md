@@ -235,6 +235,53 @@ mirror off the floor.
   **localized exactly what the learned model must add** (mirror-invariance), turning "train a transformer"
   into a specific, measurable hypothesis.
 
+### Increment-06b — the trained trajectory transformer: beat the floor, then attribute it
+**What was done (the work, in order):**
+1. Scaled the corpus **beyond 6 games** (12 games / 2,612 possessions) and split **by game** (train 8 / val
+   4) so the encoder is scored on held-out plays it never saw — a random split would leak overlapping SportVU
+   events across train/val.
+2. **Found + fixed a data-contamination bug while scaling** (the honesty catch of this increment):
+   `_game_json` picked the extracted JSON by newest mtime, but py7zr preserves each file's stored 2016 mtime,
+   so with many cached archives every call returned the *same* game. First scaled build = 2,994 "possessions"
+   but only **499 unique** (two games duplicated 6× each). Caught by a unique-possession ratio check, not a
+   crash. Fixed at the root (read the member `getnames()` says this archive contains); added the ratio as a
+   guard in the training run. The committed 06a floor was on that latently-duplicated corpus — noted plainly.
+3. Built a **compact trajectory transformer** (timestep-as-token, pre-LN, 301k params) + **InfoNCE/NT-Xent**,
+   with mirror applied at `p=0.5` inside each contrastive view — the deliberate signal aimed at the floor's
+   one weakness. Applied the increment-04 MPS caution: tiny model, **AMP off**, **1-epoch probe first** (clean,
+   no NaN), non-finite-loss guard, then the full 300-epoch run (~3 min on MPS).
+4. Recomputed the hand-feature floor on the **identical** val gallery + queries → a one-variable comparison.
+5. **Attributed the win with a one-variable ablation** (`p_mirror=0`), the increment-03 move.
+
+**Outcome (the finding):** overall recall@1 **0.618 → 0.981**, and the win is almost entirely the mirror axis
+— **0.004 → 0.999** — while jitter stays saturated (1.0) and crop improves (0.851 → 0.944). The learning
+curve shows mirror snapping on around epoch 50 as InfoNCE loss drops 6.69 → 0.63. **The ablation is the
+depth:** with `p_mirror=0`, mirror stays at the floor (0.019) — the transformer's *capacity* buys no
+mirror-invariance; the entire mirror gain is the augmentation. Two honest nuances: no-mirror gets *better*
+crop (0.981 vs 0.944) — mirror-invariance costs a little temporal discrimination, a real tradeoff — and
+no-mirror reaches a **lower** training loss (0.168 vs 0.632) yet is far worse on the retrieval metric (loss
+is a proxy, not the objective).
+- **Alternatives:** report the beat-the-floor number and move on (no attribution); tune hyperparameters on a
+  separate split (more rigorous, but 12 games is a bounded corpus — deferred with the caveat stated).
+- **Tradeoff / honesty:** the augmentation-SSL eval measures *invariance*, not play *semantics* — mirror
+  0.999 is a near-solved invariance, not proof the embedding understands set-plays (the next, harder bar).
+  MPS isn't bit-exact, but 0.004 → 0.999 dwarfs that noise. Val is both the selection and reporting set.
+- **The depth-round lesson:** the floor turned "train a transformer" into a falsifiable hypothesis, and the
+  ablation proved the *mechanism* (mirror-augmented positives), not just the outcome. Same pattern as the
+  detector arc: don't guess the lever or bank a win — isolate the one variable that caused it. Also: a
+  metadata bug that produces a plausible number (the duplicated corpus) is more dangerous than a crash;
+  an internal-consistency check is what catches it.
+
+**FAISS index (same increment):** indexed the embeddings with an **exact flat inner-product** index
+(`IndexIDMap(IndexFlatIP)`, simpler-first) — on L2-normalized vectors it reproduces the brute-force cosine
+retrieval **bit-for-bit**, and the training run *asserts* index-recall == brute-force-recall (the
+GT-as-tracker → 1.000 discipline, applied to the index). **Second "tell me about a bug":** torch + faiss-cpu
+each link their own `libomp` on macOS; `KMP_DUPLICATE_LIB_OK=TRUE` lets them import together but the process
+**segfaults (139)** under real OpenMP compute (torch MPS + faiss). Reproduced it, isolated the fix
+(`faiss.omp_set_num_threads(1)` — robust; import-order / `OMP_NUM_THREADS=1` are fragile), and noted the
+brute-force assertion doubles as the guard against silent OMP corruption. Matters for serving too (encode +
+search in one process). See `docs/increment-06b-embedding-core-trained.md`.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

@@ -34,12 +34,16 @@ def _game_json(name: str, cache: Path) -> dict | None:
     z = cache / f"{name}.7z"
     if not z.exists():
         urllib.request.urlretrieve(f"{_GH}/{name}.7z", z)
+    # Read the json THIS archive contains (unique gameid filename), not the newest in the cache dir.
+    # py7zr preserves each file's stored 2016 mtime, so an mtime sort returns the wrong game once the
+    # cache holds many archives — it silently duplicated one game across every slot (data-contamination
+    # bug caught by a unique-possession consistency check, increment-06b).
     with py7zr.SevenZipFile(z, "r") as a:
+        members = [n for n in a.getnames() if n.endswith(".json")]
         a.extractall(cache)
-    # the extracted json is named by internal gameid; pick the newest that has 'events'
-    for j in sorted(cache.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+    for jn in members:
         try:
-            d = json.loads(j.read_text())
+            d = json.loads((cache / jn).read_text())
         except Exception:
             continue
         if isinstance(d, dict) and "events" in d:
@@ -125,3 +129,21 @@ def augment(poss: np.ndarray, rng: np.random.Generator, kind: str) -> np.ndarray
     if kind == "mirror":
         return mirror(poss, "length" if rng.random() < 0.5 else "width")
     raise ValueError(kind)
+
+
+def augment_view(
+    poss: np.ndarray, rng: np.random.Generator,
+    jitter_sigma: float = 0.01, p_mirror: float = 0.5, p_crop: float = 0.5,
+) -> np.ndarray:
+    """A stochastic COMPOSITION of the three augmentations — one contrastive view (increment-06b).
+
+    Composes the same structure-preserving transforms the eval uses. Mirror lands in ~p_mirror of views,
+    so a positive pair (two views of one possession) frequently differs by a court-mirror — that is the
+    exact training signal that forces the mirror-invariance the raw-trajectory floor lacks (r@1 ~0.001).
+    """
+    out = poss
+    if rng.random() < p_mirror:
+        out = mirror(out, "length" if rng.random() < 0.5 else "width")
+    if rng.random() < p_crop:
+        out = temporal_crop(out, rng)
+    return jitter(out, rng, sigma=jitter_sigma)  # a little jitter always

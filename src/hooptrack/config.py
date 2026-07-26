@@ -65,9 +65,16 @@ class ReidConfig(BaseModel):
 class EmbeddingConfig(BaseModel):
     enabled: bool = False
     arch: str = "trajectory_transformer"   # trajectory_transformer | baller2vec
-    dim: int = 128
+    dim: int = 128                         # output embedding size (L2-normalized)
     objective: str = "contrastive"         # contrastive | denoising | masked
     window_seconds: int = 8
+    # compact trajectory-transformer arch knobs (increment-06b) — small by design (MPS caution, inc-04)
+    d_model: int = 128                     # token width inside the encoder
+    n_heads: int = 4                       # attention heads
+    n_layers: int = 2                      # TransformerEncoder depth
+    ff_dim: int = 256                      # feed-forward width
+    dropout: float = 0.1
+    temperature: float = 0.1               # InfoNCE / NT-Xent temperature
 
 
 class RetrievalConfig(BaseModel):

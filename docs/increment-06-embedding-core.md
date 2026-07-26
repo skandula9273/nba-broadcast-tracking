@@ -57,5 +57,8 @@ falsifiable target, not a vibe.
 ## Next
 
 The trained **compact trajectory transformer** (contrastive InfoNCE over the same augmentations) → must
-beat this floor, reported as-is. Then the FAISS-indexed retrieval and, downstream, the **reconstructed-vs-GT
-degradation study** — the finding the whole platform exists for.
+beat this floor, reported as-is. **Done in increment-06b** (`docs/increment-06b-embedding-core-trained.md`):
+overall recall@1 0.62 → **0.98**, court-mirror 0.004 → **0.999**, with a one-variable ablation proving the
+mirror augmentation (not the transformer capacity) is what buys the invariance. Then the FAISS-indexed
+retrieval and, downstream, the **reconstructed-vs-GT degradation study** — the finding the whole platform
+exists for.
