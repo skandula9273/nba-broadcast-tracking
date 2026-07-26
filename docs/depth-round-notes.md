@@ -210,6 +210,31 @@ homography is an *enabler* the design doc says not to gold-plate.
   a solid, measured stage + a quantified target for the deferred piece, then spend the real effort on the
   centerpiece (the embedding core + the degradation study), not on gold-plating court lines.
 
+### Increment-06 — the embedding core: the recall@k floor (simpler-first)
+**What was done (the work, in order):**
+1. Started the centerpiece (play/possession embedding for similar-play retrieval). Locked two design-doc
+   open decisions: **augmentation-SSL** recall@k eval, and a **compact trajectory transformer** encoder.
+2. Settled + validated the data end-to-end: `linouk23` SportVU 2015-16 (last public NBA tracking season) →
+   parsed a real game (452 events, ball+10 players @25Hz) → possession tensors (T=48 × 11 × 2), court-norm.
+   Corpus: 1,336 possessions / 6 games.
+3. Built the **hand-feature floor first** (rule #7): flattened normalized trajectory + cosine NN, evaluated
+   with the augmentation-SSL scheme (query = augmented possession, relevant = original), reusing the tested
+   recall@k / MRR.
+
+**Outcome (the floor + the target):** overall **recall@1 0.41** (~550× random). The split is the story:
+raw features **solve jitter and crop** (recall@5 1.0 / 0.91) but are **at chance on court-mirror (0.001)** —
+mirroring flips coordinates, so a raw trajectory can't see that a mirrored play is the *same* play. So the
+trained encoder has a precise, falsifiable job: **add mirror-invariance and beat 0.41**, especially drag
+mirror off the floor.
+- **Alternatives:** jump straight to the transformer (no floor to beat = no honest claim); or a semantic
+  PBP/hand-labeled eval (more meaningful but a manual effort — deferred as a refinement).
+- **Tradeoff / honesty:** the augmentation-SSL eval measures invariance, not full "same set-play" semantics
+  (design-doc's stated limitation). And the floor is honestly *easy where it should be* (jitter/crop) and
+  *hard where the value is* (mirror) — so "beat the floor" isn't rigged.
+- **The depth-round lesson:** build the floor before the model. The floor didn't just give a number — it
+  **localized exactly what the learned model must add** (mirror-invariance), turning "train a transformer"
+  into a specific, measurable hypothesis.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
