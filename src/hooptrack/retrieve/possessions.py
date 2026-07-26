@@ -147,3 +147,22 @@ def augment_view(
     if rng.random() < p_crop:
         out = temporal_crop(out, rng)
     return jitter(out, rng, sigma=jitter_sigma)  # a little jitter always
+
+
+def order_perturb(
+    poss: np.ndarray, rng: np.random.Generator,
+    p_swap: float = 0.0, n_swaps: int = 2, p_permute: float = 0.0, n_permute: int = 10,
+) -> np.ndarray:
+    """Order-robustness augmentation (increment-08). With the given probabilities, relabel player slots the
+    way a tracker's arbitrary track order / ID-switches would — so a positive pair differs by player ORDER
+    and the encoder must learn order-robustness. Reuses the degradation study's EXACT perturbations (train
+    on the same corruption you measure). Default (both p=0) is a no-op, preserving the inc-06b baseline.
+    """
+    from .degrade import id_swap, permute_players  # peers in retrieve/; degrade imports only numpy
+
+    out = poss
+    if rng.random() < p_permute:
+        out = permute_players(out, rng, n_permute)   # whole-possession relabel (arbitrary track order)
+    if rng.random() < p_swap:
+        out = id_swap(out, rng, n_swaps)             # mid-possession ID switch
+    return out

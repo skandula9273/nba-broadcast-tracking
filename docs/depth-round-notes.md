@@ -313,6 +313,33 @@ search in one process). See `docs/increment-06b-embedding-core-trained.md`.
   impose, localized it to one stage, and *surprised* me (the fancy encoder is less robust than the baseline
   where it wasn't trained to be) — then named the two next levers. Measuring beats assuming, again.
 
+### Increment-08 — order-robustness augmentation: the lever works, and exposes a tradeoff
+**What was done:** acted on inc-07's named lever — add order-perturbation augmentation (reuse the study's
+*exact* `permute_players`/`id_swap` as train-time augs; "train on what you measure") behind `p_permute`/`p_swap`
+levers in the shared training loop, default-off (preserves the inc-06b/07 baselines). Ran two strengths (mild
+p=0.25, aggressive p=0.5) end-to-end on *both* axes: clean recall@k and the degradation study, one variable.
+
+**Outcome (three findings):**
+- **The lever works — hypothesis confirmed exactly.** id-swap and full-permute robustness → **1.000 at every
+  severity** (baseline 0.44 / 0.02); combined realistic **0.68 → 1.0**, now *beating* the floor. The inc-06b
+  trick (train on a transform → gain invariance) generalizes from court-mirror to player-order.
+- **It's a regime switch, not a dial.** Even *mild* order-aug flips the encoder fully into
+  permutation-invariance — mild ≈ aggressive on both axes; no cheap partial order-robustness.
+- **The cost is TEMPORAL robustness, and it's steep.** Crop **0.944 → ~0.45**, high-dropout 0.92 → ~0.39, while
+  spatial invariances survive (jitter 1.0, mirror 0.999 → ~0.95). The order-blind encoder used player-slot
+  identity as an *anchor* to re-match a temporally-degraded play; permutation-invariance removes that anchor,
+  so crop/dropout now bite. Order-invariance and temporal-crop robustness are **entangled at fixed capacity**.
+- **Alternatives / next:** the augmentation fix *spends capacity* (why crop pays). Better routes it points at:
+  a **permutation-invariant architecture** (per-player tokens + symmetric pool — DeepSets/set-transformer) to
+  bake in the invariance without the crop cost; or **team-structured** permutation (within-team only, via cheap
+  jersey colour). Regime choice is deployment-driven: off broadcast association is the weak stage (AssA 0.317),
+  so the invariant regime (0.68 → 1.0) is right; with stable IDs, keep the order-sensitive regime's crop recall.
+- **Tradeoff / honesty:** two points + a sharp threshold, not a fully-resolved frontier; train-on-what-you-
+  measure (legit, same as mirror) measures the *modelled* corruption; same proxy caveats as inc-06b/07.
+- **The depth-round lesson:** a lever that "works" isn't the end of the story — measuring *both* axes turned a
+  clean win into an honest tradeoff (order-robustness costs temporal robustness), and the *mechanism*
+  (slot-identity as a temporal anchor) is the real insight, not the number.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

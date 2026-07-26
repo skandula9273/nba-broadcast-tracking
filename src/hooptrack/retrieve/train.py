@@ -31,7 +31,7 @@ import torch
 from ..config import EmbeddingConfig
 from ..eval.metrics import mean_recall_at_k, mean_reciprocal_rank
 from .embed import PlayEmbedder, info_nce_loss
-from .possessions import augment, augment_view
+from .possessions import augment, augment_view, order_perturb
 from .run import AUGS, KS, _rankings, features
 
 METRIC_KEYS = [f"recall@{k}" for k in KS] + ["MRR"]
@@ -116,6 +116,14 @@ def train_encoder(embedder: PlayEmbedder, train_corpus: np.ndarray, args, rng, e
     n = len(train_corpus)
     history: list[float] = []
     t0 = time.time()
+    # order-robustness augmentation levers (increment-08); default 0.0 -> no-op == inc-06b baseline
+    op = dict(p_swap=getattr(args, "p_swap", 0.0), n_swaps=getattr(args, "n_swaps", 2),
+              p_permute=getattr(args, "p_permute", 0.0), n_permute=getattr(args, "n_permute", 10))
+
+    def _view(P):
+        v = augment_view(P, rng, args.jitter_sigma, args.p_mirror, args.p_crop)
+        return order_perturb(v, rng, **op)
+
     for ep in range(args.epochs):
         model.train()
         perm = rng.permutation(n)
@@ -124,10 +132,8 @@ def train_encoder(embedder: PlayEmbedder, train_corpus: np.ndarray, args, rng, e
             idx = perm[i:i + args.batch]
             if len(idx) < 2:  # InfoNCE needs >=2 for negatives
                 continue
-            v1 = np.stack([augment_view(train_corpus[j], rng, args.jitter_sigma, args.p_mirror, args.p_crop)
-                           for j in idx])
-            v2 = np.stack([augment_view(train_corpus[j], rng, args.jitter_sigma, args.p_mirror, args.p_crop)
-                           for j in idx])
+            v1 = np.stack([_view(train_corpus[j]) for j in idx])
+            v2 = np.stack([_view(train_corpus[j]) for j in idx])
             x1 = torch.as_tensor(v1, dtype=torch.float32, device=embedder.device)
             x2 = torch.as_tensor(v2, dtype=torch.float32, device=embedder.device)
             loss = info_nce_loss(model(x1), model(x2), args.temperature)
@@ -232,7 +238,9 @@ def run(args) -> dict:
         },
         "training": {
             "epochs": args.epochs, "batch": args.batch, "lr": args.lr, "weight_decay": args.weight_decay,
-            "aug": {"jitter_sigma": args.jitter_sigma, "p_mirror": args.p_mirror, "p_crop": args.p_crop},
+            "aug": {"jitter_sigma": args.jitter_sigma, "p_mirror": args.p_mirror, "p_crop": args.p_crop,
+                    "p_permute": args.p_permute, "n_permute": args.n_permute,
+                    "p_swap": args.p_swap, "n_swaps": args.n_swaps},
             "device": args.device, "seconds": secs,
             "loss_first": history[0], "loss_last": history[-1],
         },
@@ -288,6 +296,11 @@ def main() -> None:
     ap.add_argument("--jitter-sigma", type=float, default=0.01)
     ap.add_argument("--p-mirror", type=float, default=0.5)
     ap.add_argument("--p-crop", type=float, default=0.5)
+    # order-robustness augmentation (increment-08); 0.0 = off = inc-06b baseline
+    ap.add_argument("--p-permute", type=float, default=0.0)
+    ap.add_argument("--n-permute", type=int, default=10)   # 10 = full player shuffle
+    ap.add_argument("--p-swap", type=float, default=0.0)
+    ap.add_argument("--n-swaps", type=int, default=2)
     args = ap.parse_args()
 
     report = run(args)

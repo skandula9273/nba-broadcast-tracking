@@ -135,6 +135,12 @@ def run(args) -> dict:
                 "operating point; expected to dominate, which motivates building+measuring re-ID next.",
             },
         },
+        "encoder_training_aug": {
+            "p_mirror": args.p_mirror, "p_crop": args.p_crop, "jitter_sigma": args.jitter_sigma,
+            "p_permute": args.p_permute, "n_permute": args.n_permute,
+            "p_swap": args.p_swap, "n_swaps": args.n_swaps,
+            "note": "order-robustness augmentation (increment-08); p_permute=p_swap=0 is the inc-07 baseline",
+        },
         "provenance": {
             "seed": args.seed, "device": args.device, "train_seconds": secs,
             "versions": {p: _ver(p) for p in ("torch", "numpy", "faiss-cpu")},
@@ -175,16 +181,25 @@ def main() -> None:
     ap.add_argument("--jitter-sigma", type=float, default=0.01)
     ap.add_argument("--p-mirror", type=float, default=0.5)
     ap.add_argument("--p-crop", type=float, default=0.5)
+    # order-robustness augmentation (increment-08) — trains the encoder with the SAME order corruptions the
+    # study perturbs with; 0.0 = off (the inc-07 order-blind baseline). Distinct from the --re-* eval knobs.
+    ap.add_argument("--p-permute", type=float, default=0.0)
+    ap.add_argument("--n-permute", type=int, default=10)
+    ap.add_argument("--p-swap", type=float, default=0.0)
+    ap.add_argument("--n-swaps", type=int, default=2)
+    ap.add_argument("--tag", default="")
     args = ap.parse_args()
 
     report = run(args)
+    report["tag"] = args.tag or None
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    (out / f"degradation_{stamp}.json").write_text(json.dumps(report, indent=2))
+    name = f"degradation_{args.tag + '_' if args.tag else ''}{stamp}.json"
+    (out / name).write_text(json.dumps(report, indent=2))
 
     r = report["results"]
-    print(f"\nWrote degradation_{stamp}.json | n_val={report['dataset']['n_val']}")
+    print(f"\nWrote {name} | n_val={report['dataset']['n_val']}")
     print(f"baseline (no degradation): trained r@1={r['baseline_no_degradation']['trained']['recall@1']} "
           f"floor r@1={r['baseline_no_degradation']['floor']['recall@1']}")
     for name, pts in r["sweeps"].items():
