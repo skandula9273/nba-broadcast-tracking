@@ -185,6 +185,31 @@ to the committed numbers via a dated amendment: **detection mAP50 0.987** (fine-
   the JSON diff. Caveats carried into the amendment: all numbers are basketball-val (test GT withheld), and
   the fine-tuned mAP is mildly optimistic (val-set model selection).
 
+### Increment-05 — homography: measure what's real, defer the finicky front-end
+**What was done (the work, in order):**
+1. Started V1: image→court homography for the top-down "moving dots". Chose **classical, no-training**
+   (simpler-first) over training KaliCalib.
+2. Got the calibration data (DeepSportradar, Kaggle-gated — the user provided credentials): 728 instants /
+   15 arenas with GT K/R/T. `deepsport-utilities` was broken on import, so I parsed the JSONs directly.
+3. Built + unit-tested the homography *machinery*: GT `H = K[r1 r2 T]`, DLT+RANSAC solver, image→court
+   projection, reprojection-error metric (roundtrips to ~1e-5 px).
+4. Split the stage honestly into **solver** (done) vs **registration front-end** (detect court keypoints —
+   the finicky part). Measured: trivial baseline **877 px**, solver vs keypoint noise (σ=3px → **2.1 px**).
+
+**Outcome / decision:** the solver is exact and crushes the 877 px no-registration floor; the whole
+accuracy budget lives in keypoint detection (~3–5 px keypoints → ~2–4 px registration). I **deliberately
+did not build a bespoke classical court-line detector** — it's a finicky multi-arena CV project, and
+homography is an *enabler* the design doc says not to gold-plate.
+- **Alternatives:** sink hours into classical line/template registration (gold-plating the enabler), or
+  train KaliCalib (the heavy MPS path the data said isn't the depth).
+- **Tradeoff / honesty:** I ship a *characterization + a concrete target* for the front-end instead of a
+  weaker end-to-end number I'd have over-invested in. Stated plainly: this measures the solver, not
+  auto-registration; and DeepSportradar is fixed arena cameras, not moving broadcast (the design doc's
+  no-aligned-broadcast-GT boundary).
+- **The depth-round lesson:** know where the depth is. Perception stages are enablers — the honest move is
+  a solid, measured stage + a quantified target for the deferred piece, then spend the real effort on the
+  centerpiece (the embedding core + the degradation study), not on gold-plating court lines.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

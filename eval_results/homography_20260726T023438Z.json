@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-07-26T02:34:38.176149+00:00",
+  "increment": "05-homography",
+  "stage": "homography (court registration)",
+  "dataset": {
+    "name": "DeepSportradar basketball-instants (camera calibration)",
+    "n_instants": 728,
+    "n_evaluated": 728,
+    "arenas": [
+      "KS-FR-BLOIS",
+      "KS-FR-BOURGEB",
+      "KS-FR-CAEN",
+      "KS-FR-FOS",
+      "KS-FR-GRAVELINES",
+      "KS-FR-LEMANS",
+      "KS-FR-LIMOGES",
+      "KS-FR-MONACO",
+      "KS-FR-NANCY",
+      "KS-FR-NANTES",
+      "KS-FR-POITIERS",
+      "KS-FR-ROANNE",
+      "KS-FR-STCHAMOND",
+      "KS-FR-STRASBOURG",
+      "KS-FR-VICHY"
+    ]
+  },
+  "metric": "court-registration reprojection error (px), court->image over a visible court grid",
+  "results": {
+    "solver_vs_keypoint_noise_sigma_px": {
+      "0.0": {
+        "mean_px": 0.0,
+        "median_px": 0.0
+      },
+      "1.0": {
+        "mean_px": 0.395,
+        "median_px": 0.378
+      },
+      "3.0": {
+        "mean_px": 2.202,
+        "median_px": 2.114
+      },
+      "5.0": {
+        "mean_px": 4.689,
+        "median_px": 4.405
+      },
+      "10.0": {
+        "mean_px": 12.191,
+        "median_px": 10.951
+      }
+    },
+    "trivial_baseline_global_mean_H": {
+      "mean_px": 917.237,
+      "median_px": 877.492
+    }
+  },
+  "notes": "Solver (DLT+RANSAC) + reprojection metric are real and validated. The automatic court-keypoint front-end is the deferred component (classical detector or the learned KaliCalib); this eval quantifies the reprojection error it must beat and the accuracy it yields per keypoint sigma. GT = DeepSportradar per-image K/R/T (H = K[r1 r2 T]). Enabler stage \u2014 not gold-plated.",
+  "provenance": {
+    "seed": 13,
+    "court_cm": [
+      2800.0,
+      1500.0
+    ],
+    "grid": "15x8",
+    "versions": {
+      "numpy": "2.4.6",
+      "opencv-python": "4.13.0.92"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}
