@@ -340,6 +340,35 @@ p=0.25, aggressive p=0.5) end-to-end on *both* axes: clean recall@k and the degr
   clean win into an honest tradeoff (order-robustness costs temporal robustness), and the *mechanism*
   (slot-identity as a temporal anchor) is the real insight, not the number.
 
+### Increment-09 — permutation-invariant architecture: a partially-negative result, measured
+**What was done:** built `SetTrajectoryTransformer` (per-entity tokens, factorized time/entity attention with
+no player position, symmetric player mean-pool, ball distinguished by a type-embedding) — **exactly**
+permutation-invariant by construction (unit test: `encode(P)==encode(permute(P))` to 1e-5; baseline confirmed
+NOT invariant). Trained with order-augmentation OFF (`p_permute=p_swap=0`) — the invariance is purely
+architectural — and measured both axes vs the inc-06b/08 baselines. Hypothesis (from inc-08): the architecture
+gets order-robustness *without* the crop cost.
+
+**Outcome (split verdict — the honest kind):**
+- **Order-robustness, exact and free ✓.** permute → **1.0 at every severity by construction** (no aug), id_swap
+  → 0.99 (the 0.01 gap = the mid-possession discontinuity the per-entity temporal attention sees), combined
+  realistic 0.68 → **0.998** (beats floor). A real edge over augmentation: a *guarantee* over all 10!
+  permutations, not a learned approximation, and zero augmentation.
+- **But the crop cost is NOT escaped ✗ — hypothesis refuted.** crop **0.487** ≈ augmentation's 0.446 (baseline
+  0.944); high-dropout collapses identically. Building the invariance in didn't buy back temporal robustness.
+- **The insight: the crop cost is *intrinsic to order-invariance*, not the method.** Convergent evidence — the
+  augmentation route (full d128) and the architecture route (d64) both collapse crop to ~0.45–0.49 and both
+  collapse high-dropout, while only the order-sensitive baseline keeps 0.94. Player-slot identity was a
+  temporal anchor for re-matching a cropped play; removing it (however you do it) costs crop. Order-invariance
+  and temporal-crop robustness are fundamentally entangled in this representation.
+- **Tradeoff / honesty:** the set-arch runs at d64/150ep (per-entity tokens OOM at d128/batch512 on MPS — the
+  inc-04 tradeoff again) vs baseline d128/300ep — a capacity confound, named. But the augmentation route at
+  full d128 collapsed crop just as hard, so the finding tracks the invariance, not the capacity. Also hit and
+  fixed a too-strict FAISS check (near-tied neighbours reorder under float non-associativity on poorly-separated
+  embeddings; now tolerance-based, records the diff — exact 0.0 on the well-trained models).
+- **The depth-round lesson:** a "next lever" can be a *partial* win — measuring both axes turned "architecture
+  fixes it" into "architecture gives the invariance for free but confirms the tradeoff is intrinsic." A clean
+  negative result (with the mechanism) is worth more than a hoped-for positive one, and I reported it as-is.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

@@ -71,6 +71,60 @@ class TrajectoryTransformer(nn.Module):
         return nn.functional.normalize(z, dim=1)           # cosine-ready
 
 
+class SetTrajectoryTransformer(nn.Module):
+    """Permutation-INVARIANT encoder over the 10 players (increment-09).
+
+    The inc-06b encoder flattens per-timestep player slots -> it is order-SENSITIVE, and inc-08 showed
+    that buying order-robustness by augmentation costs temporal-crop robustness (capacity spent). This
+    architecture bakes the invariance in instead: each (entity, timestep) is a token; a shared per-entity
+    input projection + a single 'player' type-embedding for all 10 players (a distinct 'ball' type for
+    entity 0) + temporal (not player) positional encoding; factorized attention alternates over time
+    (per entity) and over entities (per timestep, NO player position -> permutation-equivariant); then a
+    symmetric MEAN pool over players. Result: permuting the 10 players yields the *identical* embedding by
+    construction (proven in tests), while inter-player interactions (spacing) survive via spatial attention.
+    Mirror/jitter/crop invariance still come from augmentation; player-order invariance is now free.
+    """
+
+    def __init__(
+        self, dim: int = 128, d_model: int = 128, n_heads: int = 4, n_layers: int = 2,
+        ff_dim: int = 256, dropout: float = 0.1, T: int = 48,
+    ) -> None:
+        super().__init__()
+        self.T = T
+        self.in_proj = nn.Linear(COORDS, d_model)          # shared across all entities -> equivariant
+        self.type_emb = nn.Embedding(2, d_model)           # 0 = ball, 1 = player (same for all 10 players)
+
+        def _layer():
+            return nn.TransformerEncoderLayer(
+                d_model, n_heads, ff_dim, dropout, activation="gelu", batch_first=True, norm_first=True,
+            )
+        self.temporal = nn.ModuleList(_layer() for _ in range(n_layers))   # over T, per entity
+        self.spatial = nn.ModuleList(_layer() for _ in range(n_layers))    # over entities, per timestep
+        self.norm = nn.LayerNorm(d_model)
+        self.head = nn.Sequential(nn.Linear(2 * d_model, d_model), nn.GELU(), nn.Linear(d_model, dim))
+        self.register_buffer("pe", _sinusoidal_pe(T, d_model), persistent=False)
+        types = torch.ones(N_ENTITIES, dtype=torch.long)
+        types[0] = 0                                        # entity 0 is the ball
+        self.register_buffer("types", types, persistent=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        B, T, E, _ = x.shape                                # x: (B, T, 11, 2)
+        h = self.in_proj(x - 0.5)                           # center coords; (B, T, E, d)
+        h = h + self.type_emb(self.types).view(1, 1, E, -1)          # ball vs player (players identical)
+        h = h + self.pe[:T].view(1, T, 1, -1).to(h.dtype)           # temporal PE only (no player position)
+        d = h.shape[-1]
+        for temporal, spatial in zip(self.temporal, self.spatial):
+            ht = h.permute(0, 2, 1, 3).reshape(B * E, T, d)          # per-entity sequence over time
+            h = temporal(ht).reshape(B, E, T, d).permute(0, 2, 1, 3)
+            hs = h.reshape(B * T, E, d)                              # per-timestep set of entities
+            h = spatial(hs).reshape(B, T, E, d)
+        h = self.norm(h)
+        ball = h[:, :, 0, :].mean(dim=1)                            # (B, d) mean over time
+        players = h[:, :, 1:, :].mean(dim=(1, 2))                   # (B, d) mean over time AND players (symmetric)
+        z = self.head(torch.cat([ball, players], dim=1))
+        return nn.functional.normalize(z, dim=1)
+
+
 def info_nce_loss(z1: torch.Tensor, z2: torch.Tensor, temperature: float = 0.1) -> torch.Tensor:
     """NT-Xent (SimCLR). z1, z2: (B, dim) L2-normalized views of the SAME B possessions.
 
@@ -95,8 +149,14 @@ class PlayEmbedder:
         self.T = T
         self.model: TrajectoryTransformer | None = None
 
-    def build(self) -> TrajectoryTransformer:
-        self.model = TrajectoryTransformer(
+    def build(self):
+        arches = {
+            "trajectory_transformer": TrajectoryTransformer,   # inc-06b: order-sensitive
+            "set_transformer": SetTrajectoryTransformer,        # inc-09: permutation-invariant over players
+        }
+        if self.cfg.arch not in arches:
+            raise ValueError(f"arch {self.cfg.arch!r}: expected one of {sorted(arches)}")
+        self.model = arches[self.cfg.arch](
             dim=self.cfg.dim, d_model=self.cfg.d_model, n_heads=self.cfg.n_heads,
             n_layers=self.cfg.n_layers, ff_dim=self.cfg.ff_dim, dropout=self.cfg.dropout, T=self.T,
         ).to(self.device)

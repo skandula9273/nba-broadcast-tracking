@@ -10,7 +10,7 @@ reproducible eval platform**. The point is the eval rigor and an honest research
 `hooptrack` is a placeholder name. See `docs/design-doc.md` for the full spec and engineering contract (with
 dated amendments) and `docs/increment-0N-*.md` for per-increment writeups. Status: **V1 in progress** — V0
 (detection + tracking + eval harness) done and floors locked; the embedding core, FAISS index, the degradation
-study, and an order-robustness study are done; remaining V1 is a permutation-invariant encoder + re-ID, then a
+study, an order-robustness study, and a permutation-invariant encoder are done; remaining V1 is re-ID, then a
 demo + writeup.
 
 ## Results so far (measured, committed to `eval_results/`)

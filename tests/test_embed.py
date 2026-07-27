@@ -5,7 +5,38 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from hooptrack.retrieve.embed import TrajectoryTransformer, info_nce_loss  # noqa: E402
+from hooptrack.retrieve.embed import (  # noqa: E402
+    SetTrajectoryTransformer,
+    TrajectoryTransformer,
+    info_nce_loss,
+)
+
+
+def _permute_players(x):
+    """Shuffle the 10 player slots (1..10), keep the ball (0)."""
+    perm = torch.randperm(10) + 1
+    out = x.clone()
+    out[:, :, 1:] = x[:, :, perm]
+    return out
+
+
+def test_set_transformer_is_exactly_permutation_invariant():
+    """The architectural 'can't lie' check: permuting the 10 players yields the SAME embedding, by
+    construction (not learned) — this is what buys order-robustness without spending capacity (inc-09)."""
+    m = SetTrajectoryTransformer(dim=32, d_model=32, n_heads=4, n_layers=2, ff_dim=64, dropout=0.0, T=16).eval()
+    x = torch.rand(4, 16, 11, 2)
+    with torch.no_grad():
+        z1 = m(x)
+        z2 = m(_permute_players(x))
+    assert torch.allclose(z1, z2, atol=1e-5)
+
+
+def test_baseline_transformer_is_NOT_permutation_invariant():
+    """Contrast: the inc-06b flatten-per-timestep encoder is order-sensitive (that's the inc-07 fragility)."""
+    m = TrajectoryTransformer(dim=32, d_model=32, n_heads=4, n_layers=2, ff_dim=64, dropout=0.0, T=16).eval()
+    x = torch.rand(4, 16, 11, 2)
+    with torch.no_grad():
+        assert not torch.allclose(m(x), m(_permute_players(x)), atol=1e-4)
 
 
 def _model(dim=32, T=16):

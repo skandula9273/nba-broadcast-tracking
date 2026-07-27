@@ -86,15 +86,22 @@ def verify_index(gemb: np.ndarray, qembs: dict, bruteforce: dict) -> dict:
     except ImportError:
         return {"backend": "faiss", "status": "skipped: faiss-cpu not installed"}
     via_index = _eval(_faiss_rankings, gemb, qembs)
-    if via_index != bruteforce:
+    # IndexFlatIP and numpy argsort compute inner products in different summation orders, so near-tied
+    # neighbours can reorder (float non-associativity) — most visible on poorly-separated embeddings. Allow
+    # a small tolerance; a real wiring bug (wrong index/ids) would blow far past it.
+    keys = [*AUGS, "overall"]
+    max_diff = max(abs(via_index[a][m] - bruteforce[a][m]) for a in keys for m in METRIC_KEYS)
+    if max_diff > 0.01:
         raise RuntimeError(
-            f"FAISS index does NOT reproduce brute-force retrieval — index wiring bug. "
-            f"index overall={via_index['overall']} vs brute-force={bruteforce['overall']}"
+            f"FAISS index does NOT reproduce brute-force retrieval — index wiring bug "
+            f"(max abs metric diff {max_diff:.4f}). index overall={via_index['overall']} vs "
+            f"brute-force={bruteforce['overall']}"
         )
     return {
         "backend": "faiss-IndexFlatIP (exact; cosine on L2-normalized)",
         "faiss_version": _ver("faiss-cpu"),
-        "reproduces_bruteforce": True,
+        "reproduces_bruteforce": max_diff == 0.0,     # exact when embeddings are well-separated
+        "max_abs_diff_vs_bruteforce": round(max_diff, 4),   # >0 only from float tie-ordering
         "overall": via_index["overall"],
     }
 
@@ -191,7 +198,7 @@ def run(args) -> dict:
     if args.device == "mps" and hasattr(torch, "mps"):
         torch.mps.manual_seed(args.seed)
     cfg = EmbeddingConfig(
-        enabled=True, dim=args.dim, d_model=args.d_model, n_heads=args.n_heads,
+        enabled=True, arch=args.arch, dim=args.dim, d_model=args.d_model, n_heads=args.n_heads,
         n_layers=args.n_layers, ff_dim=args.ff_dim, dropout=args.dropout, temperature=args.temperature,
     )
     embedder = PlayEmbedder(cfg, device=args.device, T=args.T)
@@ -231,7 +238,7 @@ def run(args) -> dict:
                           "queries (one variable: hand-feature vs learned encoder)",
         },
         "model": {
-            "arch": "trajectory_transformer", "dim": args.dim, "d_model": args.d_model,
+            "arch": args.arch, "dim": args.dim, "d_model": args.d_model,
             "n_heads": args.n_heads, "n_layers": args.n_layers, "ff_dim": args.ff_dim,
             "dropout": args.dropout, "n_params": embedder.n_params(),
             "objective": "InfoNCE/NT-Xent", "temperature": args.temperature,
@@ -279,6 +286,7 @@ def main() -> None:
     ap.add_argument("--val-stride", type=int, default=3)   # every 3rd game (sorted) -> val
     ap.add_argument("--val-offset", type=int, default=2)
     # arch
+    ap.add_argument("--arch", default="trajectory_transformer")  # trajectory_transformer | set_transformer
     ap.add_argument("--dim", type=int, default=128)
     ap.add_argument("--d-model", type=int, default=128)
     ap.add_argument("--n-heads", type=int, default=4)

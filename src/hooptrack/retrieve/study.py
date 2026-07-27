@@ -53,7 +53,7 @@ def _prepare(args):
     if args.device == "mps" and hasattr(torch, "mps"):
         torch.mps.manual_seed(args.seed)
     cfg = EmbeddingConfig(
-        enabled=True, dim=args.dim, d_model=args.d_model, n_heads=args.n_heads,
+        enabled=True, arch=args.arch, dim=args.dim, d_model=args.d_model, n_heads=args.n_heads,
         n_layers=args.n_layers, ff_dim=args.ff_dim, dropout=args.dropout, temperature=args.temperature,
     )
     emb = PlayEmbedder(cfg, device=args.device, T=args.T)
@@ -136,6 +136,7 @@ def run(args) -> dict:
             },
         },
         "encoder_training_aug": {
+            "arch": args.arch,
             "p_mirror": args.p_mirror, "p_crop": args.p_crop, "jitter_sigma": args.jitter_sigma,
             "p_permute": args.p_permute, "n_permute": args.n_permute,
             "p_swap": args.p_swap, "n_swaps": args.n_swaps,
@@ -166,6 +167,7 @@ def main() -> None:
     ap.add_argument("--re-drop", type=float, default=0.1)
     ap.add_argument("--re-swaps", type=int, default=2)
     # encoder arch + training (defaults match the committed inc-06b model)
+    ap.add_argument("--arch", default="trajectory_transformer")  # trajectory_transformer | set_transformer
     ap.add_argument("--dim", type=int, default=128)
     ap.add_argument("--d-model", type=int, default=128)
     ap.add_argument("--n-heads", type=int, default=4)

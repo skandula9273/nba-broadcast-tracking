@@ -64,7 +64,7 @@ class ReidConfig(BaseModel):
 
 class EmbeddingConfig(BaseModel):
     enabled: bool = False
-    arch: str = "trajectory_transformer"   # trajectory_transformer | baller2vec
+    arch: str = "trajectory_transformer"   # trajectory_transformer (order-sensitive) | set_transformer (perm-invariant, inc-09)
     dim: int = 128                         # output embedding size (L2-normalized)
     objective: str = "contrastive"         # contrastive | denoising | masked
     window_seconds: int = 8
