@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -16,6 +16,9 @@ data:  ## fetch/prepare datasets into data/ (SportsMOT, DeepSportradar) — see 
 
 detect:  ## run detection on a clip/dataset
 	python -m hooptrack.detect.run --config configs/v0.yaml
+
+detect-eval:  ## detection mAP on the fine-tuned weights -> eval_results/detection_*.json (increment-04)
+	python -m hooptrack.detect.eval --config configs/v0_finetuned.yaml
 
 track:  ## run tracking -> tracker outputs (MOT format for TrackEval)
 	python -m hooptrack.track.run --config configs/v0.yaml

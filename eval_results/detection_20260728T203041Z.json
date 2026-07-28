@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-07-28T20:30:41.135426+00:00",
+  "increment": "04-detector-finetune",
+  "stage": "detection mAP \u2014 fine-tuned yolov8m, single class 'athlete'",
+  "dataset": {
+    "name": "SportsMOT basketball-val (YOLO labels from MOT gt, single class 'athlete')",
+    "yaml": "data/sportsmot/_yolo_ft/sportsmot_basketball.yaml",
+    "split": "val",
+    "n_images": 2516,
+    "classes": [
+      "athlete"
+    ]
+  },
+  "results": {
+    "detection_mAP50": 0.9872,
+    "detection_mAP50_95": 0.7951,
+    "precision": 0.9714,
+    "recall": 0.9582
+  },
+  "model": {
+    "weights": "weights/finetuned/best.pt",
+    "arch": "yolov8m (fine-tuned from COCO)",
+    "classes": {
+      "0": "athlete"
+    },
+    "ball_detected": false,
+    "imgsz_val": 640,
+    "imgsz_inference": 1280
+  },
+  "caveats": [
+    "Single class 'athlete' \u2014 the BALL is NOT detected (finetune.py names={0:'athlete'}); the design doc's 'player/ball detection' label was wrong.",
+    "OPTIMISTIC: best.pt was model-SELECTED by this same basketball-val mAP \u2014 the 15 sequences HOTA is scored on. The weights only ever saw basketball-train (no frame leakage), but a held-out SportsMOT test number (GT withheld behind Codalab) is the rigorous version.",
+    "Validated at imgsz 640 (the fine-tune imgsz that produced the reported figure); the deployed tracking pipeline infers at imgsz 1280 \u2014 a documented train/infer mismatch.",
+    "Val labels are subsampled (every 5th frame; consecutive 25fps frames are near-duplicates), matching how the model was trained/selected."
+  ],
+  "provenance": {
+    "seed": 13,
+    "device": "mps",
+    "versions": {
+      "ultralytics": "8.4.104",
+      "torch": "2.13.0",
+      "numpy": "2.4.6"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Archives the increment-04 detection figure as a real artifact (it was previously a console figure only; detection_mAP is null in every tracking eval JSON). Does not fine-tune \u2014 validates the committed weights against the val labels they were selected on."
+}

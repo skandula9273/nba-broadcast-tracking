@@ -39,8 +39,10 @@ from ground truth.** Specifically:
 
 ## Results so far (measured, committed to `eval_results/`)
 
-**Perception (V0):** detection mAP@50 **0.987** (fine-tuned yolov8m) · tracking HOTA **0.301 → 0.473** on
-SportsMOT basketball-val, via TrackEval — arc: ByteTrack → BoT-SORT → attribution → detector fine-tune.
+**Perception (V0):** **athlete** detection mAP@50 **0.987** (fine-tuned yolov8m; single class — **ball not
+detected**; model-selected on basketball-val, the same split HOTA is scored on, so mildly optimistic; committed
+to `eval_results/detection_*.json`) · tracking HOTA **0.301 → 0.473** on SportsMOT basketball-val, via
+TrackEval — arc: ByteTrack → BoT-SORT → attribution → detector fine-tune.
 
 The embedding core produced two headline findings — both about limits, both measured:
 

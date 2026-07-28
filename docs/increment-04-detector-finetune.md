@@ -15,8 +15,14 @@ weights), same ByteTrack, same inference imgsz 1280, against the 0.301 baseline.
 
 ## Detection stage (the stage's own public number)
 
-Fine-tuned yolov8m on basketball-val: **mAP50 = 0.987, mAP50-95 = 0.795** (P 0.971 / R 0.958) — vs generic
-COCO "person," which capped DetA at 0.44. The detector now reads the scene as *athletes*, not *people*.
+Fine-tuned yolov8m on basketball-val, **single class `athlete` — the ball is NOT detected**: **mAP50 = 0.987,
+mAP50-95 = 0.795** (P 0.971 / R 0.958) — vs generic COCO "person," which capped DetA at 0.44. The detector now
+reads the scene as *athletes*, not *people*. **Caveat, stated with the number (not three sections down):**
+`best.pt` was model-**selected** on this same basketball-**val** split — the 15 sequences HOTA is scored on —
+so the figure is **mildly optimistic** (the weights only ever saw basketball-train; a held-out SportsMOT *test*
+number, GT withheld behind Codalab, is the rigorous version). **Archived** as a real artifact via
+`make detect-eval` → `eval_results/detection_*.json` (previously a training-console figure only — every tracking
+eval JSON has `detection_mAP: null`); re-running reproduces mAP50 0.9872 / mAP50-95 0.7951.
 
 ## Tracking A/B (fine-tuned + ByteTrack vs COCO + ByteTrack)
 

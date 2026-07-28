@@ -67,7 +67,7 @@ as those stages land.
 
 | Metric | V0 floor (LOCKED) | Target | Source |
 |---|---|---|---|
-| Player/ball detection (mAP@50) | **0.987** (fine-tuned yolov8m, basketball-val; mAP50-95 0.795) — COCO-person baseline far below | approach published basketball-detection numbers | DeepSportradar / SportsMOT |
+| **Athlete** detection (mAP@50) — single class, **ball NOT detected** | **0.987** (fine-tuned yolov8m; mAP50-95 0.795) on basketball-**val** — *model-selected on that same split (the 15 seqs HOTA scores) → mildly optimistic*; archived: `eval_results/detection_*.json`. COCO-person baseline far below | approach published basketball-detection numbers | DeepSportradar / SportsMOT |
 | Multi-object tracking (**HOTA**) | **0.301** baseline (COCO + ByteTrack) → **0.473** best (fine-tuned + ByteTrack); BoT-SORT 0.375 | competitive with a strong baseline tracker | SportsMOT (via TrackEval) |
 | Homography reprojection error (px) | **2.1px** @ σ=3px keypoints (solver; 877px unregistered baseline) — auto front-end deferred | within a documented tolerance | DeepSportradar camera-calibration |
 | Retrieval (**recall@k**) | **LOCKED (2026-07-26):** overall recall@1 **0.41 floor → 0.98 trained** (court-mirror 0.004 → 0.999), held-out 12-game split, FAISS-verified | beat a nearest-neighbor-on-hand-features baseline ✓ (beaten + attributed) | held-out similar-play set (augmentation-SSL) |

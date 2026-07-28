@@ -174,8 +174,10 @@ is **2.3× the tracker lift**, exactly where increment-03 pointed.
 
 ### V0 complete — success floors locked (2026-07-25)
 **What was done:** after the measured V0 (increments 01–04), locked the design-doc Success-criteria floors
-to the committed numbers via a dated amendment: **detection mAP50 0.987** (fine-tuned yolov8m) and
-**tracking HOTA 0.301 baseline → 0.473 best**, all on SportsMOT basketball-val.
+to the committed numbers via a dated amendment: **detection mAP50 0.987** (fine-tuned yolov8m, **single class
+`athlete` — ball not detected**; archived 2026-07-28 as `eval_results/detection_*.json` via `make detect-eval`,
+having been a training-console figure only) and **tracking HOTA 0.301 baseline → 0.473 best**, all on
+SportsMOT basketball-val (the fine-tuned mAP is model-selected on that val split → mildly optimistic, below).
 - **Decision / outcome:** lock the *committed* numbers, not aspirational SOTA (the SEC honesty rule). The
   baseline (0.301) is the floor every future change must beat; the best-so-far (0.473) is the current bar;
   regressions become visible against a fixed line.
