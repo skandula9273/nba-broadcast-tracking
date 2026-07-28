@@ -22,16 +22,30 @@ from .trackeval_adapter import run_hota
 DO_PREPROC = False
 CLASSES_TO_EVAL = ("pedestrian",)  # SportsMOT athletes are GT class 1 == MOTChallenge 'pedestrian'
 
-CAVEATS = [
-    "Detector is COCO-pretrained (person class) as an athlete proxy — NOT fine-tuned on SportsMOT; "
-    "referees/bench/crowd it calls 'person' are false positives vs athlete-only GT and depress DetA.",
-    "ByteTrack is motion-only (Kalman + IoU). SportsMOT shows motion-only underperforms on sports — "
-    "this is the intended floor before the BoT-SORT/appearance ablation.",
-    "HOTA is on the val split (test GT is withheld behind Codalab): comparable to published SportsMOT "
-    "val baselines, not the test leaderboard.",
-    "TrackEval DO_PREPROC=False (SportsMOT has no distractor classes); CLASSES_TO_EVAL=['pedestrian'].",
-    "MPS inference is deterministic only same-machine / same-versions (seed fixed, versions pinned).",
-]
+def _caveats(cfg: Config, provenance: dict | None) -> list[str]:
+    """Caveats DERIVED from the actual run (config + the run_stats detector block), so they can never
+    contradict the run the way a hand-maintained list did (the detector caveat once said 'not fine-tuned'
+    on a fine-tuned run — fixed 2026-07-28). The detector regime has one source of truth: the run_stats
+    `detector` block, itself derived from `detect.weights` in track/run.py."""
+    det = (provenance or {}).get("detector")
+    detector_caveat = (
+        f"Detector regime (from the run config): {det['note']}" if det
+        else "Detector regime unrecorded — no run_stats.json (scaffold run, nothing tracked)."
+    )
+    method = cfg.track.method
+    tracker_caveat = (
+        f"Tracker = {method} (motion-only Kalman+IoU; SportsMOT shows motion-only underperforms on sports "
+        "— the intended floor before the appearance ablation)." if method == "bytetrack"
+        else f"Tracker = {method} (motion + appearance/CMC fusion)."
+    )
+    return [
+        detector_caveat,
+        tracker_caveat,
+        "HOTA is on the val split (test GT is withheld behind Codalab): comparable to published SportsMOT "
+        "val baselines, not the test leaderboard.",
+        "TrackEval DO_PREPROC=False (SportsMOT has no distractor classes); CLASSES_TO_EVAL=['pedestrian'].",
+        "MPS inference is deterministic only same-machine / same-versions (seed fixed, versions pinned).",
+    ]
 
 
 def _paths(cfg: Config):
@@ -110,7 +124,7 @@ def build_report(cfg: Config) -> dict:
             "metric": "HOTA (mean over alpha thresholds) + CLEAR + Identity",
         },
         "provenance": provenance,
-        "caveats": CAVEATS,
+        "caveats": _caveats(cfg, provenance),
         "notes": "Fill each result only when its stage is implemented and actually run. No fabricated numbers.",
     }
 

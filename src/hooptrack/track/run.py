@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..config import Config, load_config
+from ..config import Config, DetectConfig, load_config
 from ..detect.detector import DEFAULT_WEIGHTS, CachingDetector, build_detector, detection_cache_dir
 from ..eval.trackeval_adapter import write_mot
 from ..ingest.frames import load_mot_sequence
@@ -67,6 +67,36 @@ def _sequences(cfg: Config) -> list[str]:
     return seqs
 
 
+def _detector_provenance(dc: DetectConfig) -> dict:
+    """Detector provenance DERIVED from the actual detect config — never hand-set, so it cannot go stale.
+
+    `fine_tuned` is true iff the resolved weights are not the COCO-pretrained default (yolov8m.pt); the note
+    is generated from that same fact. When `detect.weights` is null the default resolves to COCO; any other
+    path is a non-default (fine-tuned) checkpoint. This is the single source of truth for the detector regime
+    (the eval caveats read it back), so config and provenance can't disagree the way they did pre-2026-07-28.
+    """
+    weights = dc.weights or DEFAULT_WEIGHTS
+    coco_default = weights == DEFAULT_WEIGHTS
+    note = (
+        f"COCO-pretrained {DEFAULT_WEIGHTS}, person class as athlete proxy — NOT fine-tuned on SportsMOT; "
+        "referees/bench/crowd it calls 'person' are false positives vs athlete-only GT (depresses DetA)."
+        if coco_default else
+        f"non-default (fine-tuned) weights '{weights}' — an athlete-class detector, not the COCO person proxy."
+    )
+    return {
+        "model": dc.model,
+        "weights": weights,
+        "coco_default_weights": coco_default,
+        "fine_tuned": not coco_default,
+        "conf": dc.conf,
+        "iou": dc.iou,
+        "imgsz": dc.imgsz,
+        "device": dc.device,
+        "person_class": dc.person_class,
+        "note": note,
+    }
+
+
 def run(cfg: Config) -> dict:
     _seed_everything(cfg.seed)
     split_dir = Path(cfg.eval.data_dir) / cfg.eval.mot_split
@@ -108,17 +138,7 @@ def run(cfg: Config) -> dict:
         "tracker": tracker_name(cfg),
         "cache_detections": cfg.eval.cache_detections,
         "seed": cfg.seed,
-        "detector": {
-            "model": cfg.detect.model,
-            "weights": cfg.detect.weights or DEFAULT_WEIGHTS,
-            "conf": cfg.detect.conf,
-            "iou": cfg.detect.iou,
-            "imgsz": cfg.detect.imgsz,
-            "device": cfg.detect.device,
-            "person_class": cfg.detect.person_class,
-            "fine_tuned": False,
-            "note": "COCO-pretrained person class as athlete proxy — not fine-tuned on SportsMOT.",
-        },
+        "detector": _detector_provenance(cfg.detect),
         "tracker_params": tracker.params(),
         "caps": {"max_sequences": cfg.eval.max_sequences, "max_frames": cfg.eval.max_frames},
         "versions": _versions(),

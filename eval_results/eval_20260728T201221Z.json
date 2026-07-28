@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-25T22:01:05.966564+00:00",
+  "timestamp": "2026-07-28T20:12:21.564926+00:00",
   "increment": "01-tracking-baseline",
   "status": "tracking measured \u2014 bytetrack_ft on SportsMOT-basketball-val (HOTA=0.4728)",
   "dataset": {
@@ -66,7 +66,13 @@
       "arch": "trajectory_transformer",
       "dim": 128,
       "objective": "contrastive",
-      "window_seconds": 8
+      "window_seconds": 8,
+      "d_model": 128,
+      "n_heads": 4,
+      "n_layers": 2,
+      "ff_dim": 256,
+      "dropout": 0.1,
+      "temperature": 0.1
     },
     "retrieval": {
       "enabled": false,
@@ -148,13 +154,14 @@
     "detector": {
       "model": "yolo",
       "weights": "weights/finetuned/best.pt",
+      "coco_default_weights": false,
+      "fine_tuned": true,
       "conf": 0.25,
       "iou": 0.7,
       "imgsz": 1280,
       "device": "mps",
       "person_class": 0,
-      "fine_tuned": false,
-      "note": "COCO-pretrained person class as athlete proxy \u2014 not fine-tuned on SportsMOT."
+      "note": "non-default (fine-tuned) weights 'weights/finetuned/best.pt' \u2014 an athlete-class detector, not the COCO person proxy."
     },
     "tracker_params": {
       "method": "bytetrack",
@@ -187,131 +194,131 @@
         "frames": 1162,
         "track_rows": 11199,
         "n_ids": 64,
-        "seconds": 114.92,
-        "fps": 10.11
+        "seconds": 2.65,
+        "fps": 437.76
       },
       {
         "name": "v_00HRwkvvjtQ_c003",
         "frames": 1161,
         "track_rows": 11127,
         "n_ids": 82,
-        "seconds": 110.02,
-        "fps": 10.55
+        "seconds": 1.52,
+        "fps": 762.22
       },
       {
         "name": "v_00HRwkvvjtQ_c005",
         "frames": 594,
         "track_rows": 5205,
         "n_ids": 42,
-        "seconds": 56.34,
-        "fps": 10.54
+        "seconds": 0.73,
+        "fps": 808.54
       },
       {
         "name": "v_00HRwkvvjtQ_c007",
         "frames": 707,
         "track_rows": 6189,
         "n_ids": 58,
-        "seconds": 68.27,
-        "fps": 10.36
+        "seconds": 1.07,
+        "fps": 659.31
       },
       {
         "name": "v_00HRwkvvjtQ_c008",
         "frames": 972,
         "track_rows": 9576,
         "n_ids": 52,
-        "seconds": 93.88,
-        "fps": 10.35
+        "seconds": 1.25,
+        "fps": 775.63
       },
       {
         "name": "v_00HRwkvvjtQ_c011",
         "frames": 734,
         "track_rows": 6647,
         "n_ids": 60,
-        "seconds": 127.68,
-        "fps": 5.75
+        "seconds": 0.97,
+        "fps": 758.61
       },
       {
         "name": "v_4r8QL_wglzQ_c001",
         "frames": 886,
         "track_rows": 8324,
         "n_ids": 55,
-        "seconds": 169.84,
-        "fps": 5.22
+        "seconds": 1.13,
+        "fps": 781.07
       },
       {
         "name": "v_5ekaksddqrc_c001",
         "frames": 550,
         "track_rows": 4911,
         "n_ids": 39,
-        "seconds": 103.92,
-        "fps": 5.29
+        "seconds": 0.87,
+        "fps": 631.13
       },
       {
         "name": "v_5ekaksddqrc_c002",
         "frames": 632,
         "track_rows": 5392,
         "n_ids": 52,
-        "seconds": 91.11,
-        "fps": 6.94
+        "seconds": 0.82,
+        "fps": 771.92
       },
       {
         "name": "v_5ekaksddqrc_c003",
         "frames": 1215,
         "track_rows": 11482,
         "n_ids": 98,
-        "seconds": 162.71,
-        "fps": 7.47
+        "seconds": 1.79,
+        "fps": 678.21
       },
       {
         "name": "v_5ekaksddqrc_c004",
         "frames": 824,
         "track_rows": 7463,
         "n_ids": 64,
-        "seconds": 83.47,
-        "fps": 9.87
+        "seconds": 1.09,
+        "fps": 757.07
       },
       {
         "name": "v_5ekaksddqrc_c005",
         "frames": 1000,
         "track_rows": 9205,
         "n_ids": 69,
-        "seconds": 134.83,
-        "fps": 7.42
+        "seconds": 1.24,
+        "fps": 805.38
       },
       {
         "name": "v_BgwzTUxJaeU_c008",
         "frames": 500,
         "track_rows": 3767,
         "n_ids": 65,
-        "seconds": 66.78,
-        "fps": 7.49
+        "seconds": 0.61,
+        "fps": 813.25
       },
       {
         "name": "v_BgwzTUxJaeU_c012",
         "frames": 620,
         "track_rows": 5199,
         "n_ids": 63,
-        "seconds": 79.73,
-        "fps": 7.78
+        "seconds": 0.75,
+        "fps": 824.1
       },
       {
         "name": "v_BgwzTUxJaeU_c014",
         "frames": 1000,
         "track_rows": 9316,
         "n_ids": 86,
-        "seconds": 195.45,
-        "fps": 5.12
+        "seconds": 1.33,
+        "fps": 753.06
       }
     ],
     "totals": {
       "frames": 12557,
-      "seconds": 1658.95,
-      "fps": 7.57
+      "seconds": 17.82,
+      "fps": 704.66
     }
   },
   "caveats": [
-    "Detector is COCO-pretrained (person class) as an athlete proxy \u2014 NOT fine-tuned on SportsMOT; referees/bench/crowd it calls 'person' are false positives vs athlete-only GT and depress DetA.",
-    "ByteTrack is motion-only (Kalman + IoU). SportsMOT shows motion-only underperforms on sports \u2014 this is the intended floor before the BoT-SORT/appearance ablation.",
+    "Detector regime (from the run config): non-default (fine-tuned) weights 'weights/finetuned/best.pt' \u2014 an athlete-class detector, not the COCO person proxy.",
+    "Tracker = bytetrack (motion-only Kalman+IoU; SportsMOT shows motion-only underperforms on sports \u2014 the intended floor before the appearance ablation).",
     "HOTA is on the val split (test GT is withheld behind Codalab): comparable to published SportsMOT val baselines, not the test leaderboard.",
     "TrackEval DO_PREPROC=False (SportsMOT has no distractor classes); CLASSES_TO_EVAL=['pedestrian'].",
     "MPS inference is deterministic only same-machine / same-versions (seed fixed, versions pinned)."

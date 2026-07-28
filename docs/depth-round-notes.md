@@ -369,6 +369,33 @@ gets order-robustness *without* the crop cost.
   fixes it" into "architecture gives the invariance for free but confirms the tradeoff is intrinsic." A clean
   negative result (with the mechanism) is worth more than a hoped-for positive one, and I reported it as-is.
 
+### Provenance fix — a hand-maintained detector field went stale; fixed the mechanism, re-ran (2026-07-28)
+**The bug:** the committed fine-tuned eval JSON (`eval_20260725T220105Z.json`, HOTA 0.473 / DetA 0.707) carried
+`provenance.detector.fine_tuned: false` and a "COCO-pretrained person-class proxy" note — while its own
+`config.detect.weights` pointed at `weights/finetuned/best.pt`. Config and provenance disagreed. Ground truth =
+**fine-tuned**: the detector resolves `cfg.weights or DEFAULT_WEIGHTS`, so a non-null weights path is the
+fine-tuned checkpoint, and DetA 0.707 is the increment-04 fine-tuned number (the COCO baseline was ~0.325).
+So the provenance was the wrong one.
+- **Root cause (the real bug):** `fine_tuned` and its note were **hardcoded literals** in `track/run.py`'s
+  `run_stats` dict — every field around them derived from `cfg.detect.*`, but these two didn't, so on the
+  fine-tuned run they stayed at their COCO defaults. The identical claim was independently hand-maintained in
+  `eval/run.py`'s `CAVEATS[0]` ("NOT fine-tuned").
+- **The fix (mechanism, not symptom):** `_detector_provenance(cfg.detect)` now derives the whole detector block
+  from the resolved weights — `fine_tuned = (weights != DEFAULT_WEIGHTS)`, note generated from that fact. The
+  eval caveats read the regime back from that single source (`_caveats(cfg, provenance)`); the tracker caveat
+  now derives from `cfg.track.method` (it had the same latent bug — it said "ByteTrack motion-only" regardless
+  of tracker). Config and provenance can no longer disagree.
+- **The artifact — re-ran, did NOT hand-patch.** Re-running was feasible (fine-tuned weights + prepared data +
+  detection cache all present) and **deterministic** (cached detections + seeded tracker → tracker files
+  byte-for-byte identical), so the regenerated `eval_20260728T201221Z.json` has HOTA/DetA/AssA/MOTA/IDF1/IDSW
+  **identical** to the old artifact — only the provenance metadata is corrected. Retired the old wrong JSON (no
+  doc references it by filename). Chose re-run over a correction note *because* it was cheap and lossless and it
+  proves the mechanism fix yields a correct artifact end to end.
+- **The lesson:** provenance that's hand-maintained goes stale the moment the run it describes changes — a
+  metadata field that can disagree with the config beside it is a latent lie. Generate it from the run's own
+  config. Same family as the inc-06b `_game_json` mtime bug and the inc-01 AppleDouble count: an
+  internal-consistency mismatch (config vs provenance), which is exactly how it was caught.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
