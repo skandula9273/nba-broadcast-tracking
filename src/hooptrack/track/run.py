@@ -108,7 +108,9 @@ def run(cfg: Config) -> dict:
     if cfg.eval.cache_detections:
         detector = CachingDetector(detector, detection_cache_dir(cfg))
     tracker = build_tracker(cfg.track)
-    pipe = Pipeline(cfg=cfg, detector=detector, tracker=tracker)
+    from ..homography.court import build_homography
+
+    pipe = Pipeline(cfg=cfg, detector=detector, tracker=tracker, homography=build_homography(cfg))
 
     seqs = _sequences(cfg)
     seq_stats = []

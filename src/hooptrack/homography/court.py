@@ -14,6 +14,9 @@ supply the correspondences. A classical line/keypoint detector is the baseline; 
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
 
 from ..pipeline import Track
@@ -83,3 +86,36 @@ class CourtHomography:
             cx, cy = image_to_court(foot_point(t.xyxy), H)[0]
             t.court_xy = (float(cx), float(cy))
         return tracks
+
+
+# ---- registration front-ends (the "calibration source" for the stage) ----
+# The keypoint front-end (detect court lines in an unlabelled frame) stays deferred. What IS supported is a
+# provided calibration: a FIXED court->image homography for the clip. Fine for a static camera; for a moving
+# broadcast camera it's only an approximation, so it's opt-in via config, not a default.
+
+def fixed_register(H_court2img):
+    """A registration front-end that returns the same court->image homography for every frame."""
+    H = np.asarray(H_court2img, float).reshape(3, 3)
+    return lambda frame_idx, frames: H
+
+
+def load_court2img(path: str | Path) -> np.ndarray:
+    """Load a court->image homography: a DeepSportradar calibration JSON (`{"calibration": {KK,R,T}}` or the
+    calibration dict itself), a `.npy` 3x3, or a whitespace-text 3x3."""
+    path = Path(path)
+    if path.suffix == ".json":
+        d = json.loads(path.read_text())
+        return homography_from_calibration(d.get("calibration", d))
+    if path.suffix == ".npy":
+        return np.load(path).reshape(3, 3)
+    return np.loadtxt(path).reshape(3, 3)
+
+
+def build_homography(cfg):
+    """Build the `CourtHomography` pipeline stage from config, or None. Only a fixed-calibration source is
+    wired (the court-keypoint front-end is deferred), so this returns None unless `homography.enabled` AND
+    `homography.calibration` are set — for un-calibrated broadcast, tracks honestly keep `court_xy = None`."""
+    hc = cfg.homography
+    if not hc.enabled or not getattr(hc, "calibration", None):
+        return None
+    return CourtHomography(fixed_register(load_court2img(hc.calibration)))

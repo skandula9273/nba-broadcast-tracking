@@ -23,10 +23,12 @@ from ground truth.** Specifically:
 - **detect → track — real, end to end.** `pipeline.py` (invoked by `track/run.py` and the eval harness) runs
   YOLO detection → ByteTrack/BoT-SORT tracking on real frames, producing MOT tracks scored by TrackEval. This
   is the only perception path that executes.
-- **homography — solver only, no front-end.** `homography/run.py` re-solves `H` from **GT** calibration
-  keypoints plus Gaussian noise; there is no court-keypoint detector, so court coordinates **cannot** be
-  obtained from an unlabeled broadcast frame. `enabled: false` in every committed config; `Pipeline` is always
-  constructed with `homography=None`.
+- **homography — stage wired; needs a provided calibration, no keypoint front-end.** The `CourtHomography`
+  stage (the measured inc-05 solver) is now wired into `Pipeline`: with `homography.enabled` + a
+  `homography.calibration` (a court→image matrix), it projects each track's foot point to court coords
+  (`court_xy`) — verified end to end. But there is still **no court-keypoint detector**, so an *unlabeled*
+  broadcast frame has no calibration → the default is `homography=None` and `court_xy` stays null. The
+  solver + projection are real; the auto-registration front-end is the deferred piece.
 - **re-ID, analytics — stubs.** `reid/identify.py` and `analytics/possessions.py` raise `NotImplementedError`;
   `reid=None` in `Pipeline`, `enabled: false` in every config. So the broadcast → top-down "moving dots"
   reconstruction does **not** run end to end.
@@ -90,8 +92,8 @@ flowchart LR
     classDef stub fill:#f8d0d0,stroke:#c22,color:#000,stroke-dasharray:5 3
 ```
 
-**Legend:** green = runs end to end · yellow = solver only, no front-end (disabled in every config) · red
-dashed = stub (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
+**Legend:** green = runs end to end · yellow = real stage, needs a provided calibration (no keypoint front-end;
+`homography=None` by default) · red dashed = stub (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
 **ground truth**, not from `top-down tracks` (the `not wired` edge). **Both** the eval harness and
 `serve POST /track` call `pipeline.py` for `detect → track` (the one shared path); homography/re-ID stay
 disabled, so both stop at image-coordinate tracks (no top-down "moving dots").

@@ -55,6 +55,8 @@ class TrackConfig(BaseModel):
 class HomographyConfig(BaseModel):
     method: str = "kalicalib"
     enabled: bool = False
+    calibration: str | None = None       # path to a court->image calibration (JSON/.npy/3x3 text) — the
+                                         # provided-calibration source; the court-keypoint front-end is deferred
 
 
 class ReidConfig(BaseModel):
