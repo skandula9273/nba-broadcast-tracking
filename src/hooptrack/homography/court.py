@@ -112,10 +112,15 @@ def load_court2img(path: str | Path) -> np.ndarray:
 
 
 def build_homography(cfg):
-    """Build the `CourtHomography` pipeline stage from config, or None. Only a fixed-calibration source is
-    wired (the court-keypoint front-end is deferred), so this returns None unless `homography.enabled` AND
-    `homography.calibration` are set — for un-calibrated broadcast, tracks honestly keep `court_xy = None`."""
+    """Build the `CourtHomography` pipeline stage from config, or None. Registration source, in priority:
+    a trained court-keypoint detector (`homography.keypoint_weights`, per-frame), else a provided fixed
+    calibration (`homography.calibration`). Disabled or neither -> None (tracks honestly keep court_xy=None)."""
     hc = cfg.homography
-    if not hc.enabled or not getattr(hc, "calibration", None):
+    if not hc.enabled:
         return None
-    return CourtHomography(fixed_register(load_court2img(hc.calibration)))
+    if getattr(hc, "keypoint_weights", None):
+        from .keypoint_net import learned_register
+        return CourtHomography(learned_register(hc.keypoint_weights, cfg.detect.device))
+    if getattr(hc, "calibration", None):
+        return CourtHomography(fixed_register(load_court2img(hc.calibration)))
+    return None

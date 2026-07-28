@@ -56,7 +56,9 @@ class HomographyConfig(BaseModel):
     method: str = "kalicalib"
     enabled: bool = False
     calibration: str | None = None       # path to a court->image calibration (JSON/.npy/3x3 text) — the
-                                         # provided-calibration source; the court-keypoint front-end is deferred
+                                         # provided-calibration source (fixed camera)
+    keypoint_weights: str | None = None  # path to the trained court-keypoint detector -> per-frame registration
+                                         # (KaliCalib-lite; 40px median on held-out arenas)
 
 
 class ReidConfig(BaseModel):

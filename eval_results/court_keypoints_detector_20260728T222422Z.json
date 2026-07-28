@@ -1,0 +1,103 @@
+{
+  "timestamp": "2026-07-28T22:24:21.925927+00:00",
+  "increment": "court-keypoint-detector",
+  "stage": "homography front-end \u2014 learned court-keypoint detector (KaliCalib-lite)",
+  "dataset": {
+    "name": "DeepSportradar",
+    "n_instants": 728,
+    "n_train": 608,
+    "n_val": 120,
+    "split": "by arena (held-out cameras)",
+    "val_arenas": [
+      "KS-FR-BLOIS",
+      "KS-FR-LEMANS",
+      "KS-FR-POITIERS"
+    ]
+  },
+  "model": {
+    "arch": "resnet18(pretrained) encoder + upsample decoder -> 7 heatmaps",
+    "n_params": 12726599,
+    "input": [
+      288,
+      384
+    ],
+    "keypoints": 7
+  },
+  "training": {
+    "epochs": 40,
+    "batch": 16,
+    "lr": 0.001,
+    "device": "mps",
+    "seconds": 508.1,
+    "amp": false,
+    "curve": [
+      {
+        "epoch": 0,
+        "loss": 0.01868,
+        "val_reproj_median_px": Infinity,
+        "val_solve_rate": 0.0
+      },
+      {
+        "epoch": 5,
+        "loss": 0.0015,
+        "val_reproj_median_px": Infinity,
+        "val_solve_rate": 0.0
+      },
+      {
+        "epoch": 10,
+        "loss": 0.00102,
+        "val_reproj_median_px": 679.76,
+        "val_solve_rate": 0.067
+      },
+      {
+        "epoch": 15,
+        "loss": 0.0005,
+        "val_reproj_median_px": 507.03,
+        "val_solve_rate": 0.517
+      },
+      {
+        "epoch": 20,
+        "loss": 0.00033,
+        "val_reproj_median_px": 41.43,
+        "val_solve_rate": 0.933
+      },
+      {
+        "epoch": 25,
+        "loss": 0.00018,
+        "val_reproj_median_px": 44.67,
+        "val_solve_rate": 0.992
+      },
+      {
+        "epoch": 30,
+        "loss": 0.00012,
+        "val_reproj_median_px": 41.38,
+        "val_solve_rate": 0.992
+      },
+      {
+        "epoch": 35,
+        "loss": 8e-05,
+        "val_reproj_median_px": 40.75,
+        "val_solve_rate": 1.0
+      },
+      {
+        "epoch": 39,
+        "loss": 8e-05,
+        "val_reproj_median_px": 40.23,
+        "val_solve_rate": 0.992
+      }
+    ]
+  },
+  "results": {
+    "trivial_floor_median_px": 365.16,
+    "detector_val_reproj_median_px": 40.23,
+    "detector_val_reproj_mean_px": 38.81,
+    "detector_val_solve_rate": 0.992,
+    "best_val_reproj_median_px": 40.23
+  },
+  "provenance": {
+    "seed": 13,
+    "weights": "weights/court_keypoints.pt",
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Beats the 503px floor iff the detector's keypoints yield a lower-reproj H on UNSEEN arenas. DeepSportradar is fixed arena cameras, not moving broadcast (stated boundary). Reported as-is."
+}

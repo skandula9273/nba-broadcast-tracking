@@ -456,6 +456,26 @@ tuned.
   Probe content with a *different* relevant set and let the number come out mediocre; that mediocrity **is** the
   finding, and it retires any "the embedding understands plays" over-claim.
 
+### Court-keypoint front-end — a learned detector beats the 503px floor (503 -> 40px) (2026-07-28)
+**What was done:** built the deferred homography front-end (inc-05 built + measured the solver; this supplies
+its correspondences). Harness-before-modeling: 7 canonical court line-intersections, GT image locations from
+DeepSportradar calibration, and a reprojection-error eval for any detector (inc-05's metric). Trivial floor
+(global-mean keypoints) = **503px**. Then trained a KaliCalib-lite detector — resnet18(pretrained) encoder +
+upsample decoder -> 7 heatmaps, masked MSE, **split by ARENA** (must generalize to unseen cameras, not memorize
+one). Wired the trained detector into the `CourtHomography` stage (`learned_register`) so the pipeline
+auto-registers a frame -> `court_xy`.
+- **Outcome:** on **held-out arenas**, reprojection error **503px -> 40px median**, 99% of frames registered
+  (508s / 40 epochs on MPS). Verified end to end (an unseen-arena image -> court coords). inc-04 MPS discipline
+  held: the 1-epoch probe caught the undertrained 0-solve state, and a nan-median bug (a degenerate H from
+  imperfect keypoints made `best < nan` always false, so best-weights never saved) — fixed by dropping
+  non-finite reprojection errors.
+- **Alternatives:** classical line-detection + template matching (finicky correspondence — the design-doc's
+  deferral reason); a per-arena mean H (aces fixed cameras, useless for broadcast — rejected as leakage).
+- **Tradeoff / honesty:** DeepSportradar is FIXED arena cameras, not moving broadcast — 40px is on unseen
+  *arenas* but NOT proven on broadcast (a stated boundary). Weights gitignored (a local-only model artifact).
+- **The depth-round lesson:** harness-before-modeling again — the 503px floor + the reprojection metric made
+  the detector's job falsifiable, and the arena-split kept the number honest (generalization, not camera memory).
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

@@ -23,12 +23,13 @@ from ground truth.** Specifically:
 - **detect → track — real, end to end.** `pipeline.py` (invoked by `track/run.py` and the eval harness) runs
   YOLO detection → ByteTrack/BoT-SORT tracking on real frames, producing MOT tracks scored by TrackEval. This
   is the only perception path that executes.
-- **homography — stage wired; needs a provided calibration, no keypoint front-end.** The `CourtHomography`
-  stage (the measured inc-05 solver) is now wired into `Pipeline`: with `homography.enabled` + a
-  `homography.calibration` (a court→image matrix), it projects each track's foot point to court coords
-  (`court_xy`) — verified end to end. But there is still **no court-keypoint detector**, so an *unlabeled*
-  broadcast frame has no calibration → the default is `homography=None` and `court_xy` stays null. The
-  solver + projection are real; the auto-registration front-end is the deferred piece.
+- **homography — full stage: a trained keypoint front-end registers frames automatically.** The
+  `CourtHomography` stage (inc-05 solver) is wired into `Pipeline`, and a **learned court-keypoint detector**
+  (resnet18 heatmap net, `homography.keypoint_weights`) now supplies the correspondences *from a frame image* —
+  no manual calibration. Measured: reprojection error **503px floor → 40px median** on **held-out arenas** (99%
+  registered), so the pipeline projects tracks to `court_xy` from an image (verified on an unseen arena).
+  Caveat: trained on DeepSportradar **fixed arena cameras**, not moving broadcast — broadcast generalization is
+  unproven (a stated dataset boundary). Default `homography=None`.
 - **re-ID — appearance stage wired (a weak signal); analytics — stub.** `reid/identify.py` now runs **OSNet
   appearance re-ID** (boxmot): with `reid.enabled` it clusters track-ids into identities and sets `player_id`
   (verified end to end). But appearance can't separate same-uniform players — measured OSNet cosines smear
@@ -97,9 +98,10 @@ flowchart LR
     classDef stub fill:#f8d0d0,stroke:#c22,color:#000,stroke-dasharray:5 3
 ```
 
-**Legend:** green = runs end to end · yellow = real but limited stage (homography needs a provided calibration —
-no keypoint front-end; re-ID is appearance-only — a weak signal, no jersey OCR; both `None` by default) ·
-red dashed = stub (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
+**Legend:** green = runs end to end · yellow = real but limited stage (homography auto-registers via a trained
+keypoint detector — 40px on held-out arenas, but arena-camera-trained, not broadcast-proven; re-ID is
+appearance-only — a weak signal, no jersey OCR; both `None` by default) · red dashed = stub
+(`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
 **ground truth**, not from `top-down tracks` (the `not wired` edge). **Both** the eval harness and
 `serve POST /track` call `pipeline.py` for `detect → track` (the one shared path); homography/re-ID stay
 disabled, so both stop at image-coordinate tracks (no top-down "moving dots").
