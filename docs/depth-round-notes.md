@@ -398,6 +398,64 @@ So the provenance was the wrong one.
   config. Same family as the inc-06b `_game_json` mtime bug and the inc-01 AppleDouble count: an
   internal-consistency mismatch (config vs provenance), which is exactly how it was caught.
 
+### Repo honesty audit — withdrew an inflated headline, scoped the eval, documented what actually runs (2026-07-27/28)
+A documentation-accuracy sweep from re-reading the committed claims against the artifacts and the code.
+- **Withdrew the recall headline "0.41 → 0.98".** The 0.41 was the inc-06a floor computed on a corpus later
+  found corrupted by the `_game_json` mtime-duplication bug; the honest same-split floor is **0.62**, so the
+  headline is now **0.62 → 0.98** — and I stated the withdrawal, not just the new number.
+- **Scoped the retrieval eval honestly in the README:** its "relevant" item for query *i* is corpus item *i*
+  itself under a known augmentation family, so it measures **instance-level invariance, not semantic play
+  similarity** (there are no play-type labels in the repo). And surfaced the inc-07 reversal there — the
+  zero-parameter floor beats the trained encoder under every association-error mode — and **demoted the 0.98**.
+- **"What runs today" audit,** each claim verified in the code: `retrieve/` imports nothing from
+  `detect/track/homography/pipeline` (it is fed from SportVU GT); `Pipeline` is built with `homography=None,
+  reid=None` (both `enabled:false` in every config); homography is **solver-only** (no keypoint front-end → no
+  court coords from an unlabelled frame); `reid`/`analytics` raise `NotImplementedError`; `serve /track` is a
+  501 stub that imports no pipeline. Added a "What runs today" box + a marked mermaid, removed a dead
+  `make demo` + the empty `demo/`, fixed serve's docstring (it claimed to "call the SAME pipeline"). Published
+  the repo public.
+- **Lesson:** a portfolio README is a claim surface — re-derive every headline from the artifacts, and describe
+  what *executes*, not what's aspirational. The 0.98 is real but narrow; saying exactly that is the honest move.
+
+### Detection mAP — archived a docs-only figure as a real artifact; fixed athlete/ball + the caveat placement (2026-07-28)
+`detection_mAP` is null in every tracking eval JSON — the **0.987 mAP@50 existed only in the docs**, a
+training-console figure. Chose to **re-run, not delete**: built `detect/eval.py` (`YOLO.val()` on the existing
+fine-tuned weights + the basketball-val YOLO labels — no fine-tuning) + `make detect-eval`, which **reproduced
+the figure exactly** (mAP@50 0.9872 / mAP50-95 0.7951 / P 0.971 / R 0.958) into a committed
+`eval_results/detection_*.json`. Corrected two labels everywhere the number appears: it is **single-class
+`athlete`** (`finetune.py names={0:'athlete'}`), **not "player/ball" — the ball is not detected** (the
+design-doc's "Player/ball detection" was wrong); and the **model-selection caveat now sits next to the number**
+(best.pt was selected on the same basketball-val split HOTA is scored on → mildly optimistic), not three
+sections away, and baked into the artifact's caveats.
+- **Lesson:** "committed number" means an *artifact*, not a console line — a headline that lives only in prose
+  is unverifiable. And a metric's label (which class, which split, selected how) is part of the number.
+
+### Semantic transfer probe — does the augmentation-SSL encoder capture play *content*? (no) (2026-07-28)
+**What was done:** the committed retrieval eval's positive is the query's own index → it scores instance-level
+*invariance*, not *content*. Built `retrieve/semantic_probe.py`: coarse buckets derived from the (T,11,2)
+tensors themselves (no external labels; thresholds as levers in `configs/semantic_probe.yaml`) —
+transition/halfcourt (ball along-court advance), initiation side L/M/R (ball across-court entry),
+ball-handler-change low/high (nearest-player-to-ball transitions). Metric = **precision@5** (fraction of a
+query's top-5 sharing its bucket; relevant = same-bucket, **|relevant|>1** — not the index-identity; random ≈
+bucket prevalence). Scored on the held-out val split (858) for **floor / trained / random**.
+
+**Outcome (the finding, reported as-is): floor > trained ≈ random on ALL three schemes.** trained precision@5:
+transition **0.513** (rand 0.496, floor 0.597), initiation-side **0.382 ≈ rand 0.383 (at chance)**, handler
+**0.565** (rand 0.511, floor 0.616). The encoder that scores **recall@1 0.98** on instance-invariance encodes
+little play content. The side result is the sharpest tell: it is *exactly* at chance because the encoder is
+court-mirror-invariant (inc-06b) → left/right is destroyed **by design**, while the un-invariant floor recovers
+it (0.49). All buckets came out ≥10% (no merge needed). Thresholds picked on the definitions, run once, not
+tuned.
+- **Alternatives:** pick a flattering metric (hit-rate@5 ≈ 0.9), or tune thresholds to lift the number.
+  Rejected — precision@5 with a prevalence baseline is the honest frame (literal recall@5 ≈ 0.006 is reported
+  too, and is degenerate).
+- **Honest note:** the trained encoder isn't persisted, so it's reproduced in-process with the committed
+  inc-06b recipe (same as study.py); the "don't train anything" tension was flagged openly, not silently.
+- **The depth-round lesson:** an SSL eval whose positives are the query's own augmentations measures what you
+  *trained for* (invariance) — it can look excellent (0.98) while the representation is semantically thin.
+  Probe content with a *different* relevant set and let the number come out mediocre; that mediocrity **is** the
+  finding, and it retires any "the embedding understands plays" over-claim.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
