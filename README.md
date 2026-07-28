@@ -34,10 +34,11 @@ from ground truth.** Specifically:
   `retrieve/` imports none of `detect/`, `track/`, `homography/`, or `pipeline.py`; it is fed exclusively by
   `possessions.build_corpus()` reading SportVU 2015-16 tracking JSON. The reconstructed-vs-GT degradation study
   **simulates** per-stage perception error on those GT tracks — it does not run the perception pipeline.
-- **serve — runs the shared detect → track pipeline.** `POST /track` loads a prepared MOT sequence (frames on
-  disk) and runs the **same `Pipeline` the eval calls** (detect → track), returning **image-coordinate** tracks.
-  `court_xy`/`player_id` are null (homography/re-ID off), and video decode (`ingest.extract_frames`) is a stub —
-  so the input is frames-on-disk, not a raw broadcast clip. `/health` is a liveness check. No `demo`.
+- **serve — runs the shared detect → track pipeline, from a video clip or a MOT dir.** `POST /track`'s `source`
+  is either a **video clip** (decoded to frames by `ingest.extract_frames`, OpenCV) or a prepared MOT sequence,
+  and runs the **same `Pipeline` the eval calls** (detect → track), returning **image-coordinate** tracks.
+  `court_xy`/`player_id` are null (homography/re-ID off), so these are 2D image boxes, not top-down "moving
+  dots". `/health` is a liveness check. No `demo`.
 
 ## Results so far (measured, committed to `eval_results/`)
 
@@ -79,7 +80,7 @@ flowchart LR
     SV[(SportVU GT tracking JSON)] --> CORP[build_corpus] --> ENC[play-embedding] --> IDX[(FAISS retrieval)]
     CORP --> STUDY[degradation study: GT + simulated error]
     DOTS -. not wired .-> CORP
-    SRV[serve: POST /track] -->|frames on disk| DET
+    SRV[serve: POST /track] -->|video clip / MOT dir| DET
 
     class DET,TRK,CORP,ENC,IDX,STUDY,SRV run
     class HOM partial

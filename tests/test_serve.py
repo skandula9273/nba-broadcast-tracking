@@ -18,11 +18,11 @@ def test_health_ok():
     assert r.status_code == 200 and r.json() == {"status": "ok"}
 
 
-def test_track_missing_sequence_returns_404():
-    r = client.post("/track", json={"sequence_dir": "/tmp/hooptrack_does_not_exist"})
+def test_track_missing_source_returns_404():
+    r = client.post("/track", json={"source": "/tmp/hooptrack_does_not_exist"})
     assert r.status_code == 404          # path validated before the pipeline is built (no CV stack loaded)
 
 
-def test_track_requires_sequence_dir():
+def test_track_requires_source():
     r = client.post("/track", json={})
-    assert r.status_code == 422          # pydantic: sequence_dir is required
+    assert r.status_code == 422          # pydantic: source is required

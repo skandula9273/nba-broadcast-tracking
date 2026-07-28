@@ -17,8 +17,54 @@ from pathlib import Path
 _IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp"}
 
 
-def extract_frames(clip_path: str):
-    raise NotImplementedError("frames.extract_frames: OpenCV/ffmpeg decode + shot segmentation (V1).")
+def extract_frames(
+    clip_path: str | Path, out_dir: str | Path, every: int = 1, max_frames: int | None = None,
+    name: str | None = None,
+) -> "MotSequence":
+    """Decode a video clip to frames on disk and return a `MotSequence` — so a raw clip flows through the
+    SAME pipeline path the MOT sequences use. Writes `out_dir/img1/000001.jpg…` + `out_dir/seqinfo.ini`.
+
+    `every` keeps every Nth decoded frame (subsample; broadcast is ~25-30fps and consecutive frames are
+    near-duplicates); `max_frames` caps the count. Shot segmentation (splitting a broadcast into possessions
+    at scene cuts) is a further step — this is a straight decode.
+    """
+    import cv2
+
+    clip_path = Path(clip_path)
+    if not clip_path.is_file():
+        raise FileNotFoundError(f"no video file at {clip_path}")
+    out_dir = Path(out_dir)
+    img_dir = out_dir / "img1"
+    img_dir.mkdir(parents=True, exist_ok=True)
+
+    cap = cv2.VideoCapture(str(clip_path))
+    if not cap.isOpened():
+        raise RuntimeError(f"OpenCV could not open the video {clip_path}")
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    written, read_idx, w, h = 0, 0, 0, 0
+    try:
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            if read_idx % every == 0:
+                written += 1
+                h, w = frame.shape[:2]
+                cv2.imwrite(str(img_dir / f"{written:06d}.jpg"), frame)
+                if max_frames is not None and written >= max_frames:
+                    break
+            read_idx += 1
+    finally:
+        cap.release()
+    if written == 0:
+        raise RuntimeError(f"no frames decoded from {clip_path}")
+
+    (out_dir / "seqinfo.ini").write_text(
+        "[Sequence]\n"
+        f"name={name or clip_path.stem}\nimDir=img1\nframeRate={fps / every:g}\n"
+        f"seqLength={written}\nimWidth={w}\nimHeight={h}\nimExt=.jpg\n"
+    )
+    return load_mot_sequence(out_dir)
 
 
 @dataclass
