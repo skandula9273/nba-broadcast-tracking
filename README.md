@@ -34,8 +34,10 @@ from ground truth.** Specifically:
   `retrieve/` imports none of `detect/`, `track/`, `homography/`, or `pipeline.py`; it is fed exclusively by
   `possessions.build_corpus()` reading SportVU 2015-16 tracking JSON. The reconstructed-vs-GT degradation study
   **simulates** per-stage perception error on those GT tracks — it does not run the perception pipeline.
-- **serve — health-check stub.** `serve/app.py` serves `/health`; `POST /track` returns 501 and imports no
-  pipeline code. No `demo`.
+- **serve — runs the shared detect → track pipeline.** `POST /track` loads a prepared MOT sequence (frames on
+  disk) and runs the **same `Pipeline` the eval calls** (detect → track), returning **image-coordinate** tracks.
+  `court_xy`/`player_id` are null (homography/re-ID off), and video decode (`ingest.extract_frames`) is a stub —
+  so the input is frames-on-disk, not a raw broadcast clip. `/health` is a liveness check. No `demo`.
 
 ## Results so far (measured, committed to `eval_results/`)
 
@@ -77,20 +79,21 @@ flowchart LR
     SV[(SportVU GT tracking JSON)] --> CORP[build_corpus] --> ENC[play-embedding] --> IDX[(FAISS retrieval)]
     CORP --> STUDY[degradation study: GT + simulated error]
     DOTS -. not wired .-> CORP
-    SRV[serve /track]
+    SRV[serve: POST /track] -->|frames on disk| DET
 
-    class DET,TRK,CORP,ENC,IDX,STUDY run
+    class DET,TRK,CORP,ENC,IDX,STUDY,SRV run
     class HOM partial
-    class RID,ANA,DOTS,SRV stub
+    class RID,ANA,DOTS stub
     classDef run fill:#d6f5d6,stroke:#2a2,color:#000
     classDef partial fill:#fff3c4,stroke:#c90,color:#000
     classDef stub fill:#f8d0d0,stroke:#c22,color:#000,stroke-dasharray:5 3
 ```
 
 **Legend:** green = runs end to end · yellow = solver only, no front-end (disabled in every config) · red
-dashed = stub (`NotImplementedError` / HTTP 501 / never produced). The retrieval centerpiece is fed from
-SportVU **ground truth**, not from `top-down tracks` (the `not wired` edge). The eval harness calls
-`pipeline.py` for `detect → track`; `serve` does **not** call the pipeline.
+dashed = stub (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
+**ground truth**, not from `top-down tracks` (the `not wired` edge). **Both** the eval harness and
+`serve POST /track` call `pipeline.py` for `detect → track` (the one shared path); homography/re-ID stay
+disabled, so both stop at image-coordinate tracks (no top-down "moving dots").
 
 ## Quickstart (once implemented)
 
