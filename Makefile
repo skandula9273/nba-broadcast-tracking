@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect track eval serve demo retrieve-corpus retrieve-floor retrieve-train retrieve-study test fmt lint
+.PHONY: help install lock data detect track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -23,11 +23,8 @@ track:  ## run tracking -> tracker outputs (MOT format for TrackEval)
 eval:  ## run the eval harness -> timestamped JSON in eval_results/
 	python -m hooptrack.eval.run --config configs/v0.yaml
 
-serve:  ## launch the FastAPI service
+serve:  ## launch the FastAPI health-check stub (/health; /track is a 501 stub, no pipeline wired)
 	uvicorn hooptrack.serve.app:app --reload
-
-demo:  ## launch the demo UI (once built)
-	@echo "demo: build in demo/ (V2)"
 
 retrieve-corpus:  ## build the SportVU possession corpus (increment-06) into data/sportvu
 	python -c "import numpy as np; from hooptrack.retrieve.possessions import build_corpus; c,m=build_corpus(n_games=12,T=48,max_possessions=8000,cache_dir='data/sportvu'); np.savez('data/sportvu/corpus_g12_T48.npz',corpus=c,meta=np.array(m,dtype=object)); print('built',c.shape)"

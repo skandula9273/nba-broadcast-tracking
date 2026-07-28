@@ -1,8 +1,9 @@
 # hooptrack
 
 Reconstruct player-and-ball tracking ("moving dots") from ordinary **NBA broadcast video**, train a
-**play-embedding model** on the reconstructed tracks for similarity retrieval, and wrap both in a **measured,
-reproducible eval platform**. The point is the eval rigor and an honest research question, not a tracking demo:
+**play-embedding model** on player-and-ball trajectories for similarity retrieval, and wrap both in a
+**measured, reproducible eval platform**. The point is the eval rigor and an honest research question, not a
+tracking demo (see **What runs today** below — the reconstruction-to-retrieval path is not yet wired end to end):
 
 > **How much do downstream basketball analytics (play retrieval, shot quality) degrade when computed on
 > CV-reconstructed tracking versus ground-truth tracking — and which perception errors matter most?**
@@ -10,31 +11,90 @@ reproducible eval platform**. The point is the eval rigor and an honest research
 `hooptrack` is a placeholder name. See `docs/design-doc.md` for the full spec and engineering contract (with
 dated amendments) and `docs/increment-0N-*.md` for per-increment writeups. Status: **V1 in progress** — V0
 (detection + tracking + eval harness) done and floors locked; the embedding core, FAISS index, the degradation
-study, an order-robustness study, and a permutation-invariant encoder are done; remaining V1 is re-ID, then a
-demo + writeup.
+study, an order-robustness study, and a permutation-invariant encoder are done **on ground-truth tracks**;
+remaining V1 is the homography keypoint front-end, re-ID, and wiring the retrieval core to the pipeline output,
+then a demo + writeup.
+
+## What runs today
+
+`detect → track` executes end to end on real frames; **everything to the right of `track` is a stub or fed
+from ground truth.** Specifically:
+
+- **detect → track — real, end to end.** `pipeline.py` (invoked by `track/run.py` and the eval harness) runs
+  YOLO detection → ByteTrack/BoT-SORT tracking on real frames, producing MOT tracks scored by TrackEval. This
+  is the only perception path that executes.
+- **homography — solver only, no front-end.** `homography/run.py` re-solves `H` from **GT** calibration
+  keypoints plus Gaussian noise; there is no court-keypoint detector, so court coordinates **cannot** be
+  obtained from an unlabeled broadcast frame. `enabled: false` in every committed config; `Pipeline` is always
+  constructed with `homography=None`.
+- **re-ID, analytics — stubs.** `reid/identify.py` and `analytics/possessions.py` raise `NotImplementedError`;
+  `reid=None` in `Pipeline`, `enabled: false` in every config. So the broadcast → top-down "moving dots"
+  reconstruction does **not** run end to end.
+- **retrieval / play-embedding (the centerpiece) — runs, but fed from ground truth, not the pipeline.**
+  `retrieve/` imports none of `detect/`, `track/`, `homography/`, or `pipeline.py`; it is fed exclusively by
+  `possessions.build_corpus()` reading SportVU 2015-16 tracking JSON. The reconstructed-vs-GT degradation study
+  **simulates** per-stage perception error on those GT tracks — it does not run the perception pipeline.
+- **serve — health-check stub.** `serve/app.py` serves `/health`; `POST /track` returns 501 and imports no
+  pipeline code. No `demo`.
 
 ## Results so far (measured, committed to `eval_results/`)
 
-- **Detection** mAP@50 **0.987** (fine-tuned yolov8m) · **Tracking** HOTA **0.301 → 0.473** on SportsMOT
-  basketball-val, via TrackEval — arc: ByteTrack → BoT-SORT → attribution → detector fine-tune.
-- **Play retrieval** (the centerpiece): a trained trajectory transformer beats the hand-feature floor on a
-  held-out split — overall recall@1 **0.41 → 0.98**, court-mirror **0.004 → 0.999**; a one-variable ablation
-  attributes the win to the mirror augmentation, FAISS-indexed and verified to reproduce brute-force.
-- **The degradation study** (the finding): reconstruction cost concentrates in **tracking association**
-  (ID-switches) — at the measured error budget, retrieval recall@1 **1.0 → 0.68**, while homography/detection
-  noise costs ~nothing; player-identity (re-ID) is the dominant unmeasured risk.
+**Perception (V0):** detection mAP@50 **0.987** (fine-tuned yolov8m) · tracking HOTA **0.301 → 0.473** on
+SportsMOT basketball-val, via TrackEval — arc: ByteTrack → BoT-SORT → attribution → detector fine-tune.
 
-## Pipeline
+The embedding core produced two headline findings — both about limits, both measured:
 
-`broadcast clip → detect → track → homography → re-ID → top-down tracks → {analytics, play-embedding → retrieval}`,
-wrapped by an eval harness (mAP, HOTA via TrackEval, recall@k), serving, and observability. The API and the eval
-harness call one shared pipeline path.
+**(a) The learned encoder is _more fragile_ than a zero-parameter baseline under association error.** In the
+reconstructed-vs-GT degradation study, the hand-feature floor beats the trained transformer under **every**
+association-error mode: combined realistic budget **floor 0.99 vs trained 0.68**; ID-swaps (id_swap=4)
+**floor 0.96 vs trained 0.43**; full player permutation **floor 0.21 vs trained 0.02**. Reconstruction cost
+concentrates in **tracking association** (who-is-who over time); homography/detection noise costs ~nothing. The
+trained encoder is not the component to trust off broadcast — the association stage is.
+
+**(b) Order-invariance and temporal-crop robustness are entangled — you cannot have both in this
+representation.** Making the encoder order-robust (so it survives association error) collapses temporal-crop
+recall from **0.94 → ~0.45–0.49**, while the order-sensitive baseline keeps 0.94. This holds whether the
+invariance comes from augmentation (inc-08) or from an _exactly_ permutation-invariant architecture (inc-09):
+both routes pay the same crop cost, so it tracks the invariance itself, not the method.
+
+**What the recall number is and is not.** On the same held-out split the trained encoder scores recall@1
+**0.62 → 0.98** (floor → trained; court-mirror 0.004 → 0.999). This measures whether an augmented copy of a
+possession retrieves _its own original_ under a known augmentation family (jitter / temporal-crop /
+court-mirror) — the relevant item for query _i_ is corpus item _i_ itself. It is **instance-level invariance
+retrieval, not semantic play similarity**; there are no play-type labels in this repo. The earlier
+**0.41 → 0.98** headline is **withdrawn**: 0.41 was computed on a corpus corrupted by the `_game_json`
+mtime-duplication bug, and the honest same-split floor is **0.62**.
+
+## Pipeline (what's wired)
+
+```mermaid
+flowchart LR
+    V[broadcast frames] --> DET[detect: YOLO] --> TRK[track: ByteTrack / BoT-SORT]
+    TRK --> HOM[homography] --> RID[re-ID] --> DOTS[top-down tracks]
+    DOTS --> ANA[analytics]
+    SV[(SportVU GT tracking JSON)] --> CORP[build_corpus] --> ENC[play-embedding] --> IDX[(FAISS retrieval)]
+    CORP --> STUDY[degradation study: GT + simulated error]
+    DOTS -. not wired .-> CORP
+    SRV[serve /track]
+
+    class DET,TRK,CORP,ENC,IDX,STUDY run
+    class HOM partial
+    class RID,ANA,DOTS,SRV stub
+    classDef run fill:#d6f5d6,stroke:#2a2,color:#000
+    classDef partial fill:#fff3c4,stroke:#c90,color:#000
+    classDef stub fill:#f8d0d0,stroke:#c22,color:#000,stroke-dasharray:5 3
+```
+
+**Legend:** green = runs end to end · yellow = solver only, no front-end (disabled in every config) · red
+dashed = stub (`NotImplementedError` / HTTP 501 / never produced). The retrieval centerpiece is fed from
+SportVU **ground truth**, not from `top-down tracks` (the `not wired` edge). The eval harness calls
+`pipeline.py` for `detect → track`; `serve` does **not** call the pipeline.
 
 ## Quickstart (once implemented)
 
 ```
 make install         # deps (+ TrackEval from git)
-make test            # the real metric tests pass today (31)
+make test            # the real metric tests pass today (34)
 make eval            # tracking eval harness -> eval_results/*.json
 make retrieve-corpus # build the SportVU possession corpus
 make retrieve-floor  # recall@k hand-feature floor (inc-06a)
