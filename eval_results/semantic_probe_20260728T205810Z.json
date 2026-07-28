@@ -1,0 +1,205 @@
+{
+  "timestamp": "2026-07-28T20:58:10.651285+00:00",
+  "increment": "retrieval-semantic-probe",
+  "stage": "semantic transfer probe \u2014 does the augmentation-SSL encoder capture play content?",
+  "purpose": "The committed retrieval eval's positive is the query's OWN index (instance-level invariance). This scores retrieval where relevant = same COARSE-PLAY-TYPE bucket (derived from the trajectory, |relevant|>1), i.e. whether the encoder captures content, not just augmentation-invariance.",
+  "metric": "precision@5 = fraction of a query's top-5 nearest neighbours sharing its bucket (self excluded). recall@5_literal = |top5 \u2229 relevant|/|relevant| (~5/bucket-size; shown for completeness, not the headline \u2014 precision@5's random baseline is the bucket prevalence).",
+  "dataset": {
+    "source": "linouk23 SportVU 2015-16",
+    "corpus_size": 2612,
+    "split": "by game (held-out val)",
+    "n_train": 1754,
+    "n_val": 858,
+    "val_games": [
+      "01.01.2016.NYK.at.CHI",
+      "01.02.2016.BKN.at.BOS",
+      "01.02.2016.HOU.at.SAS",
+      "01.02.2016.NOP.at.DAL"
+    ]
+  },
+  "encoders": {
+    "floor": "hand-feature: flattened court-normalized trajectory + cosine (run.py features)",
+    "trained": "committed inc-06b trajectory transformer, reproduced in-process (no persisted checkpoint; standard recipe, not tuned)",
+    "random": "seeded random unit vectors (baseline ~= bucket prevalence)"
+  },
+  "thresholds_config": {
+    "min_bucket_frac": 0.1,
+    "transition": {
+      "advance_frames": 12,
+      "advance_thresh": 0.15
+    },
+    "initiation_side": {
+      "entry_frames": 6,
+      "left_max": 0.34,
+      "right_min": 0.66
+    },
+    "handler_change": {
+      "count_thresh": 8
+    }
+  },
+  "schemes": {
+    "transition": {
+      "definition": "Transition vs halfcourt by how far the ball advances along-court early in the possession.",
+      "thresholds": {
+        "advance_frames": 12,
+        "advance_thresh": 0.15
+      },
+      "corpus_distribution_raw": {
+        "halfcourt": 1328,
+        "transition": 1284
+      },
+      "merged_into": null,
+      "corpus_distribution_used": {
+        "halfcourt": 1328,
+        "transition": 1284
+      },
+      "val_bucket_counts": {
+        "halfcourt": 429,
+        "transition": 429
+      },
+      "degenerate_single_bucket": false,
+      "overall": {
+        "floor": {
+          "precision@5": 0.597,
+          "recall@5_literal": 0.007
+        },
+        "trained": {
+          "precision@5": 0.5131,
+          "recall@5_literal": 0.006
+        },
+        "random": {
+          "precision@5": 0.496,
+          "recall@5_literal": 0.0058
+        }
+      },
+      "per_bucket_precision@5": {
+        "halfcourt": {
+          "floor": 0.7096,
+          "trained": 0.5058,
+          "random": 0.4876
+        },
+        "transition": {
+          "floor": 0.4844,
+          "trained": 0.5203,
+          "random": 0.5044
+        }
+      },
+      "random_baseline_note": "random precision@5 ~= bucket prevalence; a useful encoder beats it"
+    },
+    "initiation_side": {
+      "definition": "Initiation side (left / middle / right) by mean ball across-court position at entry.",
+      "thresholds": {
+        "entry_frames": 6,
+        "left_max": 0.34,
+        "right_min": 0.66
+      },
+      "corpus_distribution_raw": {
+        "right": 592,
+        "middle": 1381,
+        "left": 639
+      },
+      "merged_into": null,
+      "corpus_distribution_used": {
+        "right": 592,
+        "middle": 1381,
+        "left": 639
+      },
+      "val_bucket_counts": {
+        "left": 213,
+        "middle": 443,
+        "right": 202
+      },
+      "degenerate_single_bucket": false,
+      "overall": {
+        "floor": {
+          "precision@5": 0.4925,
+          "recall@5_literal": 0.0073
+        },
+        "trained": {
+          "precision@5": 0.3823,
+          "recall@5_literal": 0.0058
+        },
+        "random": {
+          "precision@5": 0.3834,
+          "recall@5_literal": 0.0059
+        }
+      },
+      "per_bucket_precision@5": {
+        "left": {
+          "floor": 0.2779,
+          "trained": 0.2441,
+          "random": 0.2535
+        },
+        "middle": {
+          "floor": 0.693,
+          "trained": 0.5142,
+          "random": 0.5133
+        },
+        "right": {
+          "floor": 0.2792,
+          "trained": 0.2386,
+          "random": 0.2356
+        }
+      },
+      "random_baseline_note": "random precision@5 ~= bucket prevalence; a useful encoder beats it"
+    },
+    "handler_change": {
+      "definition": "Low / high count of nearest-player-to-ball changes over the possession (ball-handler turnover).",
+      "thresholds": {
+        "count_thresh": 8
+      },
+      "corpus_distribution_raw": {
+        "handler_low": 1176,
+        "handler_high": 1436
+      },
+      "merged_into": null,
+      "corpus_distribution_used": {
+        "handler_low": 1176,
+        "handler_high": 1436
+      },
+      "val_bucket_counts": {
+        "handler_high": 458,
+        "handler_low": 400
+      },
+      "degenerate_single_bucket": false,
+      "overall": {
+        "floor": {
+          "precision@5": 0.6161,
+          "recall@5_literal": 0.0073
+        },
+        "trained": {
+          "precision@5": 0.5646,
+          "recall@5_literal": 0.0066
+        },
+        "random": {
+          "precision@5": 0.511,
+          "recall@5_literal": 0.0059
+        }
+      },
+      "per_bucket_precision@5": {
+        "handler_high": {
+          "floor": 0.5493,
+          "trained": 0.6022,
+          "random": 0.5432
+        },
+        "handler_low": {
+          "floor": 0.6925,
+          "trained": 0.5215,
+          "random": 0.474
+        }
+      },
+      "random_baseline_note": "random precision@5 ~= bucket prevalence; a useful encoder beats it"
+    }
+  },
+  "provenance": {
+    "seed": 13,
+    "device": "mps",
+    "encoder_epochs": 300,
+    "versions": {
+      "torch": "2.13.0",
+      "numpy": "2.4.6"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Coarse labels derived from the tensors themselves \u2014 a weak content proxy, not designed set-plays. NOTE: initiation_side (left/right) is a court-mirror-sensitive dimension the trained encoder is explicitly INVARIANT to (inc-06b), so it is expected to underperform the floor there \u2014 a real consequence of the invariance, reported per-bucket. Thresholds picked on definition, run once, reported as-is."
+}

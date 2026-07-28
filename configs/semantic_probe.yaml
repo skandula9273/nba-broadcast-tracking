@@ -1,0 +1,22 @@
+# Semantic transfer probe — coarse label thresholds derived from SportVU (T,11,2) tensors. (levers, not hardcoded)
+# Change a threshold here and re-run; nothing is hardcoded in semantic_probe.py.
+#
+# Court-normalized tensor coords (from retrieve/possessions.py):
+#   coord 0 = ALONG-court  (length, baseline<->baseline, /94ft)  -> "advance"
+#   coord 1 = ACROSS-court (width,  sideline<->sideline, /50ft)  -> "side" (left/middle/right)
+#   entity 0 = ball, entities 1..10 = players.
+# Thresholds are picked on the stated definitions, NOT tuned to the recall number.
+
+min_bucket_frac: 0.10          # any bucket below this fraction of the CORPUS is merged (not silently kept)
+
+transition:                    # transition vs halfcourt, by ball along-court advance early in the possession
+  advance_frames: 12           # first N of T=48 frames (first quarter of the possession)
+  advance_thresh: 0.15         # net |ball along-court displacement| over those frames > this => "transition"
+
+initiation_side:               # left / middle / right by ball across-court position at entry
+  entry_frames: 6              # mean ball across-court position over the first N frames
+  left_max: 0.34               # across-court < left_max  => "left"   (thirds of the width)
+  right_min: 0.66              # across-court > right_min => "right"  ; else "middle"
+
+handler_change:                # low / high count of nearest-player-to-ball changes over the possession
+  count_thresh: 8              # nearest-player-to-ball changes <= thresh => "handler_low" ; else "handler_high"

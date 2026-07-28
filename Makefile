@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -40,6 +40,9 @@ retrieve-train:  ## TRAINED trajectory transformer — contrastive InfoNCE, reca
 
 retrieve-study:  ## reconstructed-vs-GT degradation study (increment-07, the headline finding)
 	python -m hooptrack.retrieve.study --n-games 12 --epochs 300
+
+retrieve-semantic:  ## semantic transfer probe — precision@5 by coarse play-type bucket (floor/trained/random)
+	python -m hooptrack.retrieve.semantic_probe --config configs/semantic_probe.yaml
 
 test:  ## run the test suite
 	pytest -q
