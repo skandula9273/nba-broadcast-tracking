@@ -36,11 +36,13 @@ def _pipeline():
         from ..detect.detector import build_detector
         from ..homography.court import build_homography
         from ..pipeline import Pipeline
+        from ..reid.identify import build_reid
         from ..track.tracker import build_tracker
 
         cfg = load_config(os.environ.get("HOOPTRACK_CONFIG", "configs/v0.yaml"))
         _PIPELINE = (cfg, Pipeline(cfg=cfg, detector=build_detector(cfg.detect),
-                                   tracker=build_tracker(cfg.track), homography=build_homography(cfg)))
+                                   tracker=build_tracker(cfg.track), homography=build_homography(cfg),
+                                   reid=build_reid(cfg)))
     return _PIPELINE
 
 

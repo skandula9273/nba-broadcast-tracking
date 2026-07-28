@@ -62,6 +62,11 @@ class HomographyConfig(BaseModel):
 class ReidConfig(BaseModel):
     model: str = "osnet"
     enabled: bool = False
+    sim_threshold: float = 0.75          # cosine >= this merges two tracks into one appearance identity.
+                                         # A lever: on basketball, OSNet cosines smear ~0.32-0.87 with no clean
+                                         # gap (same-uniform players look alike), so no value cleanly separates
+                                         # individuals — 0.75 gives a non-degenerate split; jersey OCR is what
+                                         # individual identity actually needs.
 
 
 class EmbeddingConfig(BaseModel):

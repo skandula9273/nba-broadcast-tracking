@@ -29,9 +29,14 @@ from ground truth.** Specifically:
   (`court_xy`) — verified end to end. But there is still **no court-keypoint detector**, so an *unlabeled*
   broadcast frame has no calibration → the default is `homography=None` and `court_xy` stays null. The
   solver + projection are real; the auto-registration front-end is the deferred piece.
-- **re-ID, analytics — stubs.** `reid/identify.py` and `analytics/possessions.py` raise `NotImplementedError`;
-  `reid=None` in `Pipeline`, `enabled: false` in every config. So the broadcast → top-down "moving dots"
-  reconstruction does **not** run end to end.
+- **re-ID — appearance stage wired (a weak signal); analytics — stub.** `reid/identify.py` now runs **OSNet
+  appearance re-ID** (boxmot): with `reid.enabled` it clusters track-ids into identities and sets `player_id`
+  (verified end to end). But appearance can't separate same-uniform players — measured OSNet cosines smear
+  **0.32–0.87 with no clean gap** — so `player_id` is a **weak appearance cluster, not a verified jersey
+  identity**; individual identity needs jersey-number OCR (a deferred, model-dependent piece). `default
+  reid=None`. `analytics/possessions.py` still raises `NotImplementedError`. So the full broadcast → top-down
+  "moving dots" reconstruction still does **not** run end to end (it needs a court calibration *and* individual
+  identity).
 - **retrieval / play-embedding (the centerpiece) — runs, but fed from ground truth, not the pipeline.**
   `retrieve/` imports none of `detect/`, `track/`, `homography/`, or `pipeline.py`; it is fed exclusively by
   `possessions.build_corpus()` reading SportVU 2015-16 tracking JSON. The reconstructed-vs-GT degradation study
@@ -85,15 +90,16 @@ flowchart LR
     SRV[serve: POST /track] -->|video clip / MOT dir| DET
 
     class DET,TRK,CORP,ENC,IDX,STUDY,SRV run
-    class HOM partial
-    class RID,ANA,DOTS stub
+    class HOM,RID partial
+    class ANA,DOTS stub
     classDef run fill:#d6f5d6,stroke:#2a2,color:#000
     classDef partial fill:#fff3c4,stroke:#c90,color:#000
     classDef stub fill:#f8d0d0,stroke:#c22,color:#000,stroke-dasharray:5 3
 ```
 
-**Legend:** green = runs end to end · yellow = real stage, needs a provided calibration (no keypoint front-end;
-`homography=None` by default) · red dashed = stub (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
+**Legend:** green = runs end to end · yellow = real but limited stage (homography needs a provided calibration —
+no keypoint front-end; re-ID is appearance-only — a weak signal, no jersey OCR; both `None` by default) ·
+red dashed = stub (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
 **ground truth**, not from `top-down tracks` (the `not wired` edge). **Both** the eval harness and
 `serve POST /track` call `pipeline.py` for `detect → track` (the one shared path); homography/re-ID stay
 disabled, so both stop at image-coordinate tracks (no top-down "moving dots").
