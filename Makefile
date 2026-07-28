@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic homography-frontend test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -43,6 +43,9 @@ retrieve-study:  ## reconstructed-vs-GT degradation study (increment-07, the hea
 
 retrieve-semantic:  ## semantic transfer probe — precision@5 by coarse play-type bucket (floor/trained/random)
 	python -m hooptrack.retrieve.semantic_probe --config configs/semantic_probe.yaml
+
+homography-frontend:  ## court-keypoint front-end harness + trivial floor -> eval_results/court_keypoints_floor_*.json
+	python -m hooptrack.homography.keypoints --data-dir data/deepsport
 
 test:  ## run the test suite
 	pytest -q

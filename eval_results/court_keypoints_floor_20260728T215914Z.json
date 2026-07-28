@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-07-28T21:59:14.073547+00:00",
+  "increment": "court-keypoint-frontend",
+  "stage": "homography registration front-end \u2014 harness + trivial floor (no detector yet)",
+  "dataset": {
+    "name": "DeepSportradar basketball-instants",
+    "n_instants": 728,
+    "n_with_images": 728
+  },
+  "canonical_keypoints": {
+    "corner_bl": [
+      0.0,
+      0.0
+    ],
+    "corner_br": [
+      2800.0,
+      0.0
+    ],
+    "corner_tr": [
+      2800.0,
+      1500.0
+    ],
+    "corner_tl": [
+      0.0,
+      1500.0
+    ],
+    "mid_bottom": [
+      1400.0,
+      0.0
+    ],
+    "mid_top": [
+      1400.0,
+      1500.0
+    ],
+    "center": [
+      1400.0,
+      750.0
+    ]
+  },
+  "metric": "court-registration reprojection error (px): detect keypoints -> solve H -> vs GT calibration",
+  "results": {
+    "trivial_floor_global_mean_keypoints_px": {
+      "median_px": 503.41,
+      "mean_px": 463.04,
+      "n": 728
+    },
+    "gt_keypoint_visibility_frac": {
+      "corner_bl": 0.5,
+      "corner_br": 0.5,
+      "corner_tr": 0.5,
+      "corner_tl": 0.5,
+      "mid_bottom": 1.0,
+      "mid_top": 1.0,
+      "center": 1.0
+    },
+    "target_from_inc05": "solver at ~3px keypoints -> ~2px registration; so a detector must reach few-px keypoint accuracy"
+  },
+  "provenance": {
+    "court_cm": [
+      2800.0,
+      1500.0
+    ],
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Harness-before-modeling for the deferred front-end: a detector is any callable image->{keypoint:(u,v)}; measured by reprojection error. Floor = predict the global-mean keypoint locations. NEXT: a learned KaliCalib-lite keypoint detector, trained on these GT keypoints, must beat the floor. DeepSportradar is fixed arena cameras (not moving broadcast) \u2014 a stated dataset boundary."
+}
