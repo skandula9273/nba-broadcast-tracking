@@ -73,7 +73,11 @@ reconstructed-vs-GT degradation study, the hand-feature floor beats the trained 
 association-error mode: combined realistic budget **floor 0.99 vs trained 0.68**; ID-swaps (id_swap=4)
 **floor 0.96 vs trained 0.43**; full player permutation **floor 0.21 vs trained 0.02**. Reconstruction cost
 concentrates in **tracking association** (who-is-who over time); homography/detection noise costs ~nothing. The
-trained encoder is not the component to trust off broadcast — the association stage is.
+trained encoder is not the component to trust off broadcast — the association stage is. **The re-ID axis is now
+anchored to a _measured_ operating point** (not just a sensitivity sweep): jersey coverage on real tracker
+output resolves ~0.56 of players, so ~4 of 10 per possession land in arbitrary slots — folding that into the
+realistic budget drops the trained encoder to **0.27 (vs floor 0.89)**. Re-ID, once measured, is the dominant
+realistic cost, exactly as inc-07 predicted.
 
 **(b) Order-invariance and temporal-crop robustness are entangled — you cannot have both in this
 representation.** Making the encoder order-robust (so it survives association error) collapses temporal-crop

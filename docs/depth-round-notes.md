@@ -305,8 +305,15 @@ search in one process). See `docs/increment-06b-embedding-core-trained.md`.
   order-sensitive and was trained only with order-*preserving* augmentations. Complementary failure modes,
   not "floor wins" — and the fix is the same lever that bought mirror-invariance: add id-swap/permutation
   augmentation.
-- **Player-identity (re-ID) is the dominant *unmeasured* risk** — 2 wrong players → r@1 0.81, full scramble →
-  0.02. Sensitivity only (stage unbuilt); it's why re-ID is next.
+- **Player-identity (re-ID) is the dominant risk — now MEASURED, not just flagged (2026-07-29).** The axis was
+  a sensitivity sweep (2 wrong → r@1 0.81, full scramble → 0.02). Then jersey-OCR on real tracker output gave a
+  real anchor: it resolves an identity for ~0.56 of substantial tracks, so ~round((1-0.56)·10)=**4 of 10
+  players per possession** land in arbitrary slots ≈ `permute_players(4)`. Folding that measured point into the
+  realistic budget (`--re-permute 4`, new `combined_realistic_with_reid`): trained r@1 **0.669 → 0.266**, floor
+  0.992 → 0.890. So re-ID is now the **quantified** dominant realistic cost — and coverage ≥ accuracy (no
+  jersey labels), so n_wrong=4 is a **lower bound** on the damage (raw per-id coverage 0.365 → a pessimistic 6,
+  where trained falls to 0.176). The trained encoder's order-fragility (finding 2) is what makes re-ID error so
+  expensive for it specifically.
 - **Alternatives:** claim reconstruction "barely hurts" from the jitter/dropout results alone (misleading —
   omits the order-corruption stages); or wait for aligned broadcast GT that doesn't exist. Rejected both.
 - **Tradeoff / honesty:** a controlled proxy with stated px→ft / IDSW→swaps mapping assumptions, not the real

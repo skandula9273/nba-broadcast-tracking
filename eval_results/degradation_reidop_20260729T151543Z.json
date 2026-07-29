@@ -1,0 +1,487 @@
+{
+  "timestamp": "2026-07-29T15:15:43.445098+00:00",
+  "increment": "07-degradation-study",
+  "stage": "reconstructed-vs-GT retrieval degradation (controlled)",
+  "dataset": {
+    "source": "linouk23 SportVU 2015-16",
+    "n_games": 12,
+    "T": 48,
+    "split": "by game (held-out val)",
+    "train_games": [
+      "01.01.2016.CHA.at.TOR",
+      "01.01.2016.DAL.at.MIA",
+      "01.01.2016.ORL.at.WAS",
+      "01.01.2016.PHI.at.LAL",
+      "01.02.2016.DEN.at.GSW",
+      "01.02.2016.DET.at.IND",
+      "01.02.2016.MEM.at.UTA",
+      "01.02.2016.MIL.at.MIN"
+    ],
+    "val_games": [
+      "01.01.2016.NYK.at.CHI",
+      "01.02.2016.BKN.at.BOS",
+      "01.02.2016.HOU.at.SAS",
+      "01.02.2016.NOP.at.DAL"
+    ],
+    "n_val": 858
+  },
+  "method": {
+    "query": "a DEGRADED clean GT possession",
+    "gallery": "the clean GT val corpus",
+    "relevant": "the source possession",
+    "retrieval": "FAISS IndexFlatIP (cosine)",
+    "encoders": [
+      "trained trajectory transformer",
+      "hand-feature floor"
+    ],
+    "baseline_no_degradation_is_1.0": "query == gallery item, so recall@1 = 1.0; drops are the cost"
+  },
+  "measured_budgets": {
+    "homography_reproj_px": {
+      "kp_sigma_1px": 0.4,
+      "kp_sigma_3px": 2.2,
+      "kp_sigma_5px": 4.69,
+      "unregistered_baseline_px": 877.0,
+      "source": "inc-05"
+    },
+    "detection": {
+      "DetA": 0.707,
+      "LocA": 0.841,
+      "Frag": 1847,
+      "source": "inc-04 (fine-tuned)"
+    },
+    "tracking": {
+      "AssA": 0.317,
+      "IDSW": 955,
+      "frames": 12557,
+      "source": "inc-04 (fine-tuned)"
+    },
+    "reid_jersey": {
+      "coverage_substantial": 0.56,
+      "coverage_raw": 0.365,
+      "tracker": "bytetrack_ft",
+      "n_wrong_operating": 4,
+      "source": "jersey_ocr_tracker (make jersey-eval-tracker)",
+      "note": "coverage >= accuracy (no jersey labels) => n_wrong is a lower bound"
+    },
+    "mapping_notes": "jitter_ft <- homography(~2-5px @ broadcast scale ~0.15-0.5ft) + detection localization; dropout <- DetA/Frag; id_swap count <- IDSW/frames ~0.076/frame ~2-4 per 48-frame possession (AssA 0.317 => association is the weak stage). Order-of-magnitude anchoring; the sweep carries the finding, not any single derived number."
+  },
+  "realistic_budget": {
+    "sigma_ft": 0.5,
+    "drop_rate": 0.1,
+    "n_swaps": 2,
+    "n_permute_reid": 4
+  },
+  "results": {
+    "baseline_no_degradation": {
+      "trained": {
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "MRR": 1.0
+      },
+      "floor": {
+        "recall@1": 1.0,
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "MRR": 1.0
+      }
+    },
+    "sweeps": {
+      "jitter_ft": [
+        {
+          "severity": 0.0,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 0.25,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 0.5,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 1.0,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 2.0,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 4.0,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        }
+      ],
+      "dropout": [
+        {
+          "severity": 0.0,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 0.05,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 0.1,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 0.2,
+          "trained": {
+            "recall@1": 0.9988,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 0.9994
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 0.3,
+          "trained": {
+            "recall@1": 0.9918,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 0.9956
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 0.4,
+          "trained": {
+            "recall@1": 0.9476,
+            "recall@5": 0.9837,
+            "recall@10": 0.9942,
+            "MRR": 0.964
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        }
+      ],
+      "id_swap": [
+        {
+          "severity": 0,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "severity": 1,
+          "trained": {
+            "recall@1": 0.8205,
+            "recall@5": 0.8928,
+            "recall@10": 0.9126,
+            "MRR": 0.8527
+          },
+          "floor": {
+            "recall@1": 0.9988,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 0.9991
+          }
+        },
+        {
+          "severity": 2,
+          "trained": {
+            "recall@1": 0.6667,
+            "recall@5": 0.796,
+            "recall@10": 0.838,
+            "MRR": 0.7272
+          },
+          "floor": {
+            "recall@1": 0.9883,
+            "recall@5": 0.9965,
+            "recall@10": 0.9965,
+            "MRR": 0.9917
+          }
+        },
+        {
+          "severity": 3,
+          "trained": {
+            "recall@1": 0.5524,
+            "recall@5": 0.7063,
+            "recall@10": 0.7622,
+            "MRR": 0.6227
+          },
+          "floor": {
+            "recall@1": 0.9837,
+            "recall@5": 0.993,
+            "recall@10": 0.9988,
+            "MRR": 0.9886
+          }
+        },
+        {
+          "severity": 4,
+          "trained": {
+            "recall@1": 0.4371,
+            "recall@5": 0.6224,
+            "recall@10": 0.6807,
+            "MRR": 0.5235
+          },
+          "floor": {
+            "recall@1": 0.9592,
+            "recall@5": 0.9883,
+            "recall@10": 0.9918,
+            "MRR": 0.973
+          }
+        }
+      ]
+    },
+    "combined_realistic": {
+      "trained": {
+        "recall@1": 0.669,
+        "recall@5": 0.789,
+        "recall@10": 0.8287,
+        "MRR": 0.7248
+      },
+      "floor": {
+        "recall@1": 0.9918,
+        "recall@5": 0.9965,
+        "recall@10": 0.9988,
+        "MRR": 0.9943
+      }
+    },
+    "combined_realistic_with_reid": {
+      "trained": {
+        "recall@1": 0.2657,
+        "recall@5": 0.3776,
+        "recall@10": 0.4592,
+        "MRR": 0.3305
+      },
+      "floor": {
+        "recall@1": 0.8904,
+        "recall@5": 0.9452,
+        "recall@10": 0.9709,
+        "MRR": 0.9159
+      }
+    },
+    "reid_operating_point": {
+      "permute_players": [
+        {
+          "n_wrong": 0,
+          "trained": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          },
+          "floor": {
+            "recall@1": 1.0,
+            "recall@5": 1.0,
+            "recall@10": 1.0,
+            "MRR": 1.0
+          }
+        },
+        {
+          "n_wrong": 2,
+          "trained": {
+            "recall@1": 0.8077,
+            "recall@5": 0.8753,
+            "recall@10": 0.8963,
+            "MRR": 0.8385
+          },
+          "floor": {
+            "recall@1": 0.9942,
+            "recall@5": 0.9988,
+            "recall@10": 0.9988,
+            "MRR": 0.996
+          }
+        },
+        {
+          "n_wrong": 4,
+          "trained": {
+            "recall@1": 0.4021,
+            "recall@5": 0.5478,
+            "recall@10": 0.6107,
+            "MRR": 0.4773
+          },
+          "floor": {
+            "recall@1": 0.9499,
+            "recall@5": 0.979,
+            "recall@10": 0.9883,
+            "MRR": 0.9626
+          }
+        },
+        {
+          "n_wrong": 6,
+          "trained": {
+            "recall@1": 0.176,
+            "recall@5": 0.2855,
+            "recall@10": 0.3368,
+            "MRR": 0.2356
+          },
+          "floor": {
+            "recall@1": 0.8112,
+            "recall@5": 0.9068,
+            "recall@10": 0.9417,
+            "MRR": 0.8564
+          }
+        },
+        {
+          "n_wrong": 10,
+          "trained": {
+            "recall@1": 0.0128,
+            "recall@5": 0.0408,
+            "recall@10": 0.0653,
+            "MRR": 0.0349
+          },
+          "floor": {
+            "recall@1": 0.2051,
+            "recall@5": 0.3893,
+            "recall@10": 0.4942,
+            "MRR": 0.3039
+          }
+        }
+      ],
+      "measured_n_wrong": 4,
+      "note": "re-ID axis, now ANCHORED to a measured operating point. Jersey-OCR on real tracker output (bytetrack_ft, HOTA 0.473, make jersey-eval-tracker) resolves an individual identity for ~0.56 of substantial tracks (raw per-id 0.365), so per possession ~round((1-0.56)*10)=4 of 10 players are unresolved -> arbitrary slot order == permute_players(n_wrong~=4); raw coverage gives a pessimistic ~6. Coverage >= accuracy (no jersey labels), so n_wrong is a LOWER bound on re-ID damage. `combined_realistic_with_reid` adds this to the perception budget."
+    }
+  },
+  "encoder_training_aug": {
+    "arch": "trajectory_transformer",
+    "p_mirror": 0.5,
+    "p_crop": 0.5,
+    "jitter_sigma": 0.01,
+    "p_permute": 0.0,
+    "n_permute": 10,
+    "p_swap": 0.0,
+    "n_swaps": 2,
+    "note": "order-robustness augmentation (increment-08); p_permute=p_swap=0 is the inc-07 baseline"
+  },
+  "provenance": {
+    "seed": 13,
+    "device": "mps",
+    "train_seconds": 175.6,
+    "versions": {
+      "torch": "2.13.0",
+      "numpy": "2.4.6",
+      "faiss-cpu": "1.14.3"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Controlled degradation: no aligned broadcast+SportVU truth exists, so GT tracks are perturbed with measured per-stage error budgets. Reported as-is.",
+  "tag": "reidop"
+}

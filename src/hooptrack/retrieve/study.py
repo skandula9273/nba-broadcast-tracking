@@ -7,8 +7,8 @@ falloff. Setup reuses the whole harness: query = a degraded GT possession, galle
 corpus, relevant = the source possession, retrieval = the FAISS index. Baseline (no degradation) = 1.0, so
 every point below 1.0 is the recall the reconstruction costs. We report the TRAINED encoder and the
 hand-feature FLOOR side by side (does learning degrade more gracefully?), one error source at a time, plus a
-combined realistic operating point — and, separately and clearly labelled, a re-ID sensitivity (that stage
-is not yet built/measured).
+combined realistic operating point — plus the re-ID axis, now ANCHORED to a measured operating point (jersey
+coverage on real tracker output gives ~4 unresolved players per possession; see `reid_operating_point`).
 """
 from __future__ import annotations
 
@@ -92,6 +92,12 @@ def run(args) -> dict:
 
     combined = _point(recon, None, val_corpus, encoders, galleries, [args.seed, 90])
 
+    def recon_reid(P, rng, _):   # perception error PLUS the measured re-ID operating point (unresolved players)
+        out = reconstruct(P, rng, args.re_sigma_ft, args.re_drop, args.re_swaps)
+        return permute_players(out, rng, args.re_permute)
+
+    combined_reid = _point(recon_reid, None, val_corpus, encoders, galleries, [args.seed, 92])
+
     rname, rfn, rgrid = REID_SWEEP
     reid = [
         {"n_wrong": sev, **_point(rfn, sev, val_corpus, encoders, galleries, [args.seed, 91, gi])}
@@ -118,21 +124,31 @@ def run(args) -> dict:
                                      "unregistered_baseline_px": 877.0, "source": "inc-05"},
             "detection": {"DetA": 0.707, "LocA": 0.841, "Frag": 1847, "source": "inc-04 (fine-tuned)"},
             "tracking": {"AssA": 0.317, "IDSW": 955, "frames": 12557, "source": "inc-04 (fine-tuned)"},
+            "reid_jersey": {"coverage_substantial": 0.56, "coverage_raw": 0.365, "tracker": "bytetrack_ft",
+                            "n_wrong_operating": args.re_permute,
+                            "source": "jersey_ocr_tracker (make jersey-eval-tracker)",
+                            "note": "coverage >= accuracy (no jersey labels) => n_wrong is a lower bound"},
             "mapping_notes": "jitter_ft <- homography(~2-5px @ broadcast scale ~0.15-0.5ft) + detection "
             "localization; dropout <- DetA/Frag; id_swap count <- IDSW/frames ~0.076/frame ~2-4 per 48-frame "
             "possession (AssA 0.317 => association is the weak stage). Order-of-magnitude anchoring; the "
             "sweep carries the finding, not any single derived number.",
         },
-        "realistic_budget": {"sigma_ft": args.re_sigma_ft, "drop_rate": args.re_drop, "n_swaps": args.re_swaps},
+        "realistic_budget": {"sigma_ft": args.re_sigma_ft, "drop_rate": args.re_drop, "n_swaps": args.re_swaps,
+                             "n_permute_reid": args.re_permute},
         "results": {
             "baseline_no_degradation": baseline,
             "sweeps": sweeps,
             "combined_realistic": combined,
-            "sensitivity_reid_pending": {
+            "combined_realistic_with_reid": combined_reid,
+            "reid_operating_point": {
                 "permute_players": reid,
-                "note": "re-ID / player-identity stage is NOT built or measured — a real tracker emits "
-                "arbitrary track order and the encoder needs canonical order. Shown as sensitivity only, no "
-                "operating point; expected to dominate, which motivates building+measuring re-ID next.",
+                "measured_n_wrong": args.re_permute,
+                "note": "re-ID axis, now ANCHORED to a measured operating point. Jersey-OCR on real tracker "
+                "output (bytetrack_ft, HOTA 0.473, make jersey-eval-tracker) resolves an individual identity "
+                "for ~0.56 of substantial tracks (raw per-id 0.365), so per possession ~round((1-0.56)*10)=4 "
+                "of 10 players are unresolved -> arbitrary slot order == permute_players(n_wrong~=4); raw "
+                "coverage gives a pessimistic ~6. Coverage >= accuracy (no jersey labels), so n_wrong is a "
+                "LOWER bound on re-ID damage. `combined_realistic_with_reid` adds this to the perception budget.",
             },
         },
         "encoder_training_aug": {
@@ -166,6 +182,9 @@ def main() -> None:
     ap.add_argument("--re-sigma-ft", type=float, default=0.5)
     ap.add_argument("--re-drop", type=float, default=0.1)
     ap.add_argument("--re-swaps", type=int, default=2)
+    # measured re-ID operating point: unresolved players per possession. ~4 from jersey coverage 0.56 on
+    # bytetrack_ft (raw 0.365 -> ~6, pessimistic); coverage>=accuracy so this is a lower bound on re-ID damage.
+    ap.add_argument("--re-permute", type=int, default=4)
     # encoder arch + training (defaults match the committed inc-06b model)
     ap.add_argument("--arch", default="trajectory_transformer")  # trajectory_transformer | set_transformer
     ap.add_argument("--dim", type=int, default=128)
@@ -211,9 +230,14 @@ def main() -> None:
     c = r["combined_realistic"]
     print(f"\ncombined realistic {report['realistic_budget']}: "
           f"trained r@1={c['trained']['recall@1']} floor r@1={c['floor']['recall@1']}")
-    print("\nreID sensitivity (pending measurement) — permute_players (n_wrong: trained r@1 | floor r@1):")
-    for p in r["sensitivity_reid_pending"]["permute_players"]:
-        print(f"  {p['n_wrong']:>2}: {p['trained']['recall@1']:.3f} | {p['floor']['recall@1']:.3f}")
+    cr = r["combined_realistic_with_reid"]
+    print(f"combined + measured re-ID (permute {args.re_permute}): "
+          f"trained r@1={cr['trained']['recall@1']} floor r@1={cr['floor']['recall@1']}")
+    print(f"\nreID operating point — permute_players (measured n_wrong={args.re_permute}; "
+          "n_wrong: trained r@1 | floor r@1):")
+    for p in r["reid_operating_point"]["permute_players"]:
+        mark = "  <- measured" if p["n_wrong"] == args.re_permute else ""
+        print(f"  {p['n_wrong']:>2}: {p['trained']['recall@1']:.3f} | {p['floor']['recall@1']:.3f}{mark}")
 
 
 if __name__ == "__main__":
