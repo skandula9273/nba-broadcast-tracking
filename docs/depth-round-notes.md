@@ -524,6 +524,18 @@ auto-registers a frame -> `court_xy`.
   stage**: reconstruction cost concentrates in **tracking association**, not the per-frame perception — better
   association (fewer fragments/id-swaps) recovers most of the jersey-coverage gap, not a better OCR model.
   Committed `eval_results/jersey_ocr_tracker_*.json`.
+- **Then built the recovery lever the diagnosis implied — fragment stitching (`reid/stitch.py`,
+  `make jersey-eval-stitch`).** Since the loss is fragmentation, gap-close a player's split ids so jersey votes
+  pool: link id B to id A when B *starts* just after A *ends* (gap ≤30f) and B's first box is spatially near
+  A's last box (≤2 box-diagonals), greedy earliest-first + union-find. Chose spatiotemporal linking over
+  appearance clustering deliberately: it only links **temporally disjoint** fragments (never co-present, so it
+  can't merge same-uniform teammates — OSNet's fatal weakness here). Measured on all 15 seqs: **949 → 480 ids**
+  (2× consolidation), raw coverage **0.365 → 0.479** (≈⅓ of the gap to the 0.73 ceiling). The **precision check
+  that makes it credible: consensus ROSE 0.252 → 0.294** — if stitching were over-merging teammates, two numbers
+  would compete and consensus would fall; it rose because correct same-player merges reinforce the majority.
+  Honest limits: a heuristic gap-closer recovers a *third*, not all — long gaps and true id-swaps need real
+  re-ID or a less-fragmenting tracker; and it's still coverage, not accuracy. Closes the arc: **diagnosis
+  (association is the cost) → lever (fix association) → measured recovery, with a precision guard.**
 
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*

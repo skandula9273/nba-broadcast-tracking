@@ -105,15 +105,26 @@ def aggregate(details: list[dict], hi_consensus: float = 0.6, min_substantial: i
     }
 
 
-def measure(config: dict, seqs: list[str], source: str = "gt", tracker: str = "bytetrack_ft") -> dict:
-    """Run one JerseyOCR config over all seqs' tracks (GT or real tracker output); aggregate coverage."""
+def measure(config: dict, seqs: list[str], source: str = "gt", tracker: str = "bytetrack_ft",
+            stitch: dict | None = None) -> dict:
+    """Run one JerseyOCR config over all seqs' tracks (GT or real tracker output); aggregate coverage. When
+    `stitch` is given, gap-close tracker fragments first (the coverage-recovery lever) and report the id-count
+    reduction, so a coverage gain can be attributed to consolidation rather than a lowered bar."""
     ocr = JerseyOCR(min_conf=0.4, min_votes=2, **config)
     details: list[dict] = []
+    n_raw = 0
     for seq in seqs:
         frames = load_mot_sequence(FRAMES_ROOT / seq)
         tracks = load_gt_tracks(seq) if source == "gt" else load_tracker_tracks(seq, tracker)
+        n_raw += len({t.track_id for t in tracks})
+        if stitch is not None:
+            from .stitch import stitch_fragments
+            tracks = stitch_fragments(tracks, **stitch)
         details.extend(ocr.read_detail(tracks, frames).values())
-    return aggregate(details)
+    r = aggregate(details)
+    if stitch is not None:
+        r["n_ids_raw"] = n_raw                              # pre-stitch id count; r["n_tracks"] is post-stitch
+    return r
 
 
 def main() -> None:
@@ -123,6 +134,9 @@ def main() -> None:
     ap.add_argument("--configs", default=None, help="comma-separated config names; default = full ablation")
     ap.add_argument("--source", default="gt", choices=["gt", "tracker"], help="track source: GT boxes or tracker")
     ap.add_argument("--tracker", default="bytetrack_ft", help="tracker name under trackers/ (--source tracker)")
+    ap.add_argument("--stitch", action="store_true", help="gap-close tracker fragments first (coverage lever)")
+    ap.add_argument("--stitch-gap", type=int, default=30, help="max frame gap to link fragments")
+    ap.add_argument("--stitch-dist", type=float, default=2.0, help="max seam distance in box-diagonals")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
@@ -130,31 +144,38 @@ def main() -> None:
     if args.source == "tracker":                         # keep only seqs this tracker actually produced
         seqs = [s for s in seqs if (TRACKERS_ROOT / args.tracker / "data" / f"{s}.txt").is_file()]
     names = args.configs.split(",") if args.configs else list(CONFIGS)
+    stitch = {"max_gap": args.stitch_gap, "max_dist_factor": args.stitch_dist} if args.stitch else None
     src_label = "GT boxes" if args.source == "gt" else f"tracker output ({args.tracker})"
-    print(f"source: {src_label}  |  sequences ({len(seqs)}): {seqs}")
+    print(f"source: {src_label}{' +stitch' if stitch else ''}  |  sequences ({len(seqs)}): {seqs}")
 
     results = {}
     for name in names:
         print(f"\n=== {name}: {CONFIGS[name]} ===")
-        r = measure(CONFIGS[name], seqs, source=args.source, tracker=args.tracker)
+        r = measure(CONFIGS[name], seqs, source=args.source, tracker=args.tracker, stitch=stitch)
         results[name] = {"config": {**CONFIGS[name], "min_conf": 0.4, "min_votes": 2}, **r}
+        raw = f"  n_ids {r['n_ids_raw']}->{r['n_tracks']}" if "n_ids_raw" in r else f"  n_tracks={r['n_tracks']}"
         print(f"  coverage={r['track_coverage']}  substantial={r['coverage_substantial']} "
               f"(n={r['n_substantial']})  hi_consensus={r['hi_consensus_coverage']}  "
-              f"crop_read_rate={r['crop_read_rate']}  n_tracks={r['n_tracks']}")
+              f"crop_read_rate={r['crop_read_rate']}{raw}")
 
     basis = ("SportsMOT basketball-val GT-boxed athletes (OCR isolated from tracker error)" if args.source == "gt"
              else f"SportsMOT basketball-val REAL tracker output ({args.tracker}, HOTA 0.473) — the operating "
                   "point; fragmented/id-swapped tracks vs GT's 10 full-length ids/seq")
+    if stitch:
+        basis += f" + fragment stitching (gap<={args.stitch_gap}f, dist<={args.stitch_dist}diag)"
     report = {
         "task": "jersey_ocr_coverage",
         "source": args.source,
         "tracker": args.tracker if args.source == "tracker" else None,
+        "stitch": stitch,
         "basis": basis + "; coverage not accuracy (no jersey labels); consensus = cross-frame precision proxy",
         "sequences": seqs,
         "utc": datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"),
         "results": results,
     }
     tag = "" if args.source == "gt" else f"{args.source}_"
+    if stitch:
+        tag += "stitch_"
     out = Path(args.out) if args.out else Path("eval_results") / f"jersey_ocr_{tag}{report['utc']}.json"
     out.write_text(json.dumps(report, indent=2))
     print(f"\nwrote {out}")

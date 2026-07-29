@@ -1,0 +1,82 @@
+{
+  "task": "jersey_ocr_coverage",
+  "source": "tracker",
+  "tracker": "bytetrack_ft",
+  "stitch": {
+    "max_gap": 30,
+    "max_dist_factor": 2.0
+  },
+  "basis": "SportsMOT basketball-val REAL tracker output (bytetrack_ft, HOTA 0.473) \u2014 the operating point; fragmented/id-swapped tracks vs GT's 10 full-length ids/seq + fragment stitching (gap<=30f, dist<=2.0diag); coverage not accuracy (no jersey labels); consensus = cross-frame precision proxy",
+  "sequences": [
+    "v_00HRwkvvjtQ_c001",
+    "v_00HRwkvvjtQ_c003",
+    "v_00HRwkvvjtQ_c005",
+    "v_00HRwkvvjtQ_c007",
+    "v_00HRwkvvjtQ_c008",
+    "v_00HRwkvvjtQ_c011",
+    "v_4r8QL_wglzQ_c001",
+    "v_5ekaksddqrc_c001",
+    "v_5ekaksddqrc_c002",
+    "v_5ekaksddqrc_c003",
+    "v_5ekaksddqrc_c004",
+    "v_5ekaksddqrc_c005",
+    "v_BgwzTUxJaeU_c008",
+    "v_BgwzTUxJaeU_c012",
+    "v_BgwzTUxJaeU_c014"
+  ],
+  "utc": "20260729T160140Z",
+  "results": {
+    "band_noprep": {
+      "config": {
+        "max_crops": 40,
+        "band": [
+          0.1,
+          0.52
+        ],
+        "upscale": 4,
+        "preprocess": false,
+        "stride_sample": true,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 480,
+      "track_coverage": 0.479,
+      "hi_consensus_coverage": 0.294,
+      "coverage_substantial": 0.588,
+      "n_substantial": 379,
+      "crop_read_rate": 0.152,
+      "numbers_read": {
+        "6": 29,
+        "15": 24,
+        "5": 20,
+        "2": 19,
+        "14": 17,
+        "31": 12,
+        "0": 12,
+        "44": 10,
+        "12": 10,
+        "30": 9,
+        "32": 9,
+        "13": 8,
+        "10": 8,
+        "1": 6,
+        "22": 6,
+        "4": 6,
+        "23": 5,
+        "20": 4,
+        "8": 3,
+        "7": 3,
+        "16": 2,
+        "17": 1,
+        "25": 1,
+        "80": 1,
+        "68": 1,
+        "18": 1,
+        "9": 1,
+        "75": 1,
+        "11": 1
+      },
+      "n_ids_raw": 949
+    }
+  }
+}

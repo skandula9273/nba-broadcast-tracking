@@ -43,7 +43,11 @@ from ground truth.** Specifically:
   tracking*. On **real tracker output** (`bytetrack_ft`, HOTA 0.473, `make jersey-eval-tracker`) coverage
   roughly **halves to 0.365** — but only because fragmentation explodes 150 GT ids → **949 tracker-ids**; among
   substantial tracks (≥10 crops) it's **0.56**, and the per-crop read rate is **unchanged (0.16)**. So the drop
-  is **association, not OCR** — the same dominant cost inc-07 found. An additive ablation attributes the GT lift
+  is **association, not OCR** — the same dominant cost inc-07 found. A cheap **fragment-stitching** lever
+  (gap-close a player's split ids so votes pool, `make jersey-eval-stitch`) recovers about a third of it: 949 →
+  **480 ids**, coverage **0.365 → 0.479**, and crucially consensus **rises** (0.25 → 0.29) — correct same-player
+  merges reinforce the vote rather than corrupt it, direct evidence the loss was association and better
+  association recovers it (full re-ID / a less-fragmenting tracker would close the rest). An additive ablation attributes the GT lift
   (0.175 → 0.73) to **evidence, not image enhancement**: more crops and even-sampling each ~double coverage;
   CLAHE contrast *hurt*. Tracks without a number fall back to the appearance cluster. `analytics/possessions.py`
   then computes honest **player-configuration** analytics — team spacing + a ball-free transition/halfcourt

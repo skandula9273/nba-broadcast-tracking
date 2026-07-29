@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic homography-frontend homography-detector jersey-eval jersey-eval-tracker test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -55,6 +55,9 @@ jersey-eval:  ## jersey-OCR coverage ablation on SportsMOT GT-boxed athletes -> 
 
 jersey-eval-tracker:  ## jersey-OCR coverage on REAL tracker output (the operating point) -> jersey_ocr_tracker_*.json
 	python -m hooptrack.reid.eval_jersey --source tracker --tracker bytetrack_ft --seqs all --configs band_noprep
+
+jersey-eval-stitch:  ## jersey-OCR coverage on tracker output WITH fragment stitching (the recovery lever)
+	python -m hooptrack.reid.eval_jersey --source tracker --tracker bytetrack_ft --seqs all --configs band_noprep --stitch
 
 test:  ## run the test suite
 	pytest -q
