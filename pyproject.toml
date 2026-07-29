@@ -29,6 +29,7 @@ cv = [
   "torchvision>=0.17",
   "ultralytics>=8.2",   # AGPL — see license note. Swap for rfdetr / yolox to avoid AGPL.
   "boxmot>=10.0",       # ByteTrack / BoT-SORT / Deep-EIoU trackers + ReID
+  "easyocr>=1.7",       # jersey-number OCR (re-ID individual identity)
 ]
 retrieve = [
   "faiss-cpu>=1.8",     # or pgvector via psycopg (you know pgvector from SEC)

@@ -53,10 +53,12 @@ class ReIDIdentifier:
     """Appearance re-ID stage. Implements the pipeline's `ReID` protocol (`identify(tracks, frames)`)."""
 
     def __init__(self, weights: str = "osnet_x0_25_msmt17.pt", device: str = "cpu",
-                 sim_threshold: float = 0.5) -> None:
+                 sim_threshold: float = 0.5, jersey_ocr: bool = False, jersey_min_votes: int = 2) -> None:
         self.weights = weights
         self.device = device
         self.sim_threshold = sim_threshold
+        self.jersey_ocr = jersey_ocr
+        self.jersey_min_votes = jersey_min_votes
         self._model = None
 
     def _reid(self):
@@ -93,9 +95,14 @@ class ReIDIdentifier:
             return tracks
         tids = sorted(means)
         labels = agglomerate(np.stack([means[t] for t in tids]), self.sim_threshold)
-        tid_to_pid = {tid: f"p{labels[i]}" for i, tid in enumerate(tids)}
+        tid_to_pid = {tid: f"p{labels[i]}" for i, tid in enumerate(tids)}   # appearance cluster
+        if self.jersey_ocr:                                                 # overlay jersey numbers where read
+            from .jersey import JerseyOCR
+            nums = JerseyOCR(min_votes=self.jersey_min_votes, gpu=(self.device == "cuda:0")).read(tracks, frames)
+            for tid, num in nums.items():
+                tid_to_pid[tid] = f"#{num}"                                  # individual identity for ~40% of tracks
         for t in tracks:
-            t.player_id = tid_to_pid.get(t.track_id)          # None for a track with no usable crop (honest)
+            t.player_id = tid_to_pid.get(t.track_id)          # "#32" (jersey) | "p3" (appearance) | None
         return tracks
 
 
@@ -104,4 +111,5 @@ def build_reid(cfg):
     if not cfg.reid.enabled:
         return None
     return ReIDIdentifier(weights=cfg.track.reid_weights, device=cfg.track.device,
-                          sim_threshold=cfg.reid.sim_threshold)
+                          sim_threshold=cfg.reid.sim_threshold, jersey_ocr=cfg.reid.jersey_ocr,
+                          jersey_min_votes=cfg.reid.jersey_min_votes)

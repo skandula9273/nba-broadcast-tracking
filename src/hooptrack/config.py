@@ -69,6 +69,8 @@ class ReidConfig(BaseModel):
                                          # gap (same-uniform players look alike), so no value cleanly separates
                                          # individuals — 0.75 gives a non-degenerate split; jersey OCR is what
                                          # individual identity actually needs.
+    jersey_ocr: bool = False             # overlay jersey-number OCR (easyocr) -> individual player_id where read
+    jersey_min_votes: int = 2            # a track needs >= this many agreeing digit reads to accept a number
 
 
 class EmbeddingConfig(BaseModel):

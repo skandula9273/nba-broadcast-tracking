@@ -6,6 +6,7 @@ import numpy as np
 
 from hooptrack.config import ReidConfig, TrackConfig
 from hooptrack.reid.identify import ReIDIdentifier, agglomerate, build_reid
+from hooptrack.reid.jersey import majority_number
 
 
 def _l2rows(x):
@@ -34,3 +35,15 @@ def test_build_reid_off_returns_none_on_builds_lazy():
     r = build_reid(on)
     assert isinstance(r, ReIDIdentifier)
     assert r.sim_threshold == 0.6 and r._model is None    # OSNet not loaded until first identify()
+
+
+def test_jersey_majority_vote():
+    assert majority_number(["32", "32", "30", "32"], 2) == "32"   # 3 votes for 32 >= 2
+    assert majority_number(["5", "7"], 2) is None                 # top has 1 vote < 2 -> abstain
+    assert majority_number([], 2) is None
+
+
+def test_build_reid_carries_jersey_flag():
+    on = SimpleNamespace(reid=ReidConfig(enabled=True, jersey_ocr=True, jersey_min_votes=3), track=TrackConfig())
+    r = build_reid(on)
+    assert r.jersey_ocr is True and r.jersey_min_votes == 3

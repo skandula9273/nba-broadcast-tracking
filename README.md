@@ -30,14 +30,14 @@ from ground truth.** Specifically:
   registered), so the pipeline projects tracks to `court_xy` from an image (verified on an unseen arena).
   Caveat: trained on DeepSportradar **fixed arena cameras**, not moving broadcast — broadcast generalization is
   unproven (a stated dataset boundary). Default `homography=None`.
-- **re-ID — appearance stage wired (a weak signal); analytics — stub.** `reid/identify.py` now runs **OSNet
-  appearance re-ID** (boxmot): with `reid.enabled` it clusters track-ids into identities and sets `player_id`
-  (verified end to end). But appearance can't separate same-uniform players — measured OSNet cosines smear
-  **0.32–0.87 with no clean gap** — so `player_id` is a **weak appearance cluster, not a verified jersey
-  identity**; individual identity needs jersey-number OCR (a deferred, model-dependent piece). `default
-  reid=None`. `analytics/possessions.py` still raises `NotImplementedError`. So the full broadcast → top-down
-  "moving dots" reconstruction still does **not** run end to end (it needs a court calibration *and* individual
-  identity).
+- **re-ID — appearance clusters + jersey-number OCR; analytics — stub.** `reid/identify.py` runs **OSNet
+  appearance re-ID** (`player_id` = cluster `p{k}`) — but appearance can't separate same-uniform players (OSNet
+  cosines smear **0.32–0.87, no clean gap**), so with `reid.jersey_ocr` it **overlays jersey-number OCR**
+  (easyocr): per track, majority-vote the digit reads over its crops → `player_id` = `#<number>`. Measured on
+  broadcast: ~12% of single crops read a number, but per-track aggregation lifts it to **~40% of tracks**
+  getting a plausible jersey (verified: `#32`, `#30`, `#20`) — a *sparse but real* individual identity; the
+  rest fall back to the appearance cluster. `analytics/possessions.py` still raises `NotImplementedError`.
+  Default `reid=None`.
 - **retrieval / play-embedding (the centerpiece) — runs, but fed from ground truth, not the pipeline.**
   `retrieve/` imports none of `detect/`, `track/`, `homography/`, or `pipeline.py`; it is fed exclusively by
   `possessions.build_corpus()` reading SportVU 2015-16 tracking JSON. The reconstructed-vs-GT degradation study
@@ -99,8 +99,9 @@ flowchart LR
 ```
 
 **Legend:** green = runs end to end · yellow = real but limited stage (homography auto-registers via a trained
-keypoint detector — 40px on held-out arenas, but arena-camera-trained, not broadcast-proven; re-ID is
-appearance-only — a weak signal, no jersey OCR; both `None` by default) · red dashed = stub
+keypoint detector — 40px on held-out arenas, but arena-camera-trained, not broadcast-proven; re-ID =
+appearance clusters + jersey-number OCR, individual identity for ~40% of tracks; both `None` by default) ·
+red dashed = stub
 (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU
 **ground truth**, not from `top-down tracks` (the `not wired` edge). **Both** the eval harness and
 `serve POST /track` call `pipeline.py` for `detect → track` (the one shared path); homography/re-ID stay
