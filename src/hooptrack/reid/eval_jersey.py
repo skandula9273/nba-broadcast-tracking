@@ -28,6 +28,7 @@ from .jersey import JerseyOCR
 
 GT_ROOT = Path("data/sportsmot/trackeval/gt/SportsMOT-basketball-val")
 FRAMES_ROOT = Path("data/sportsmot/val")
+TRACKERS_ROOT = Path("data/sportsmot/trackeval/trackers/SportsMOT-basketball-val")
 
 # Additive ablation: each row changes exactly one lever from the row above. min_conf/min_votes fixed (0.4/2).
 CONFIGS: dict[str, dict] = {
@@ -44,17 +45,25 @@ CONFIGS: dict[str, dict] = {
 }
 
 
-def load_gt_tracks(seq: str) -> list[Track]:
-    """GT MOT rows -> Track objects. MOT: frame(1-based), id, x, y, w, h, conf, cls, vis (all athletes)."""
-    rows = (GT_ROOT / seq / "gt" / "gt.txt").read_text().splitlines()
+def _load_mot(path: Path) -> list[Track]:
+    """MOT rows -> Track objects. MOT: frame(1-based), id, x, y, w, h, ... (all athletes)."""
     tracks: list[Track] = []
-    for line in rows:
+    for line in path.read_text().splitlines():
         if not line.strip():
             continue
         f, tid, x, y, w, h = (float(v) for v in line.split(",")[:6])
-        tracks.append(Track(track_id=int(tid), frame=int(f), cls="athlete",
-                            xyxy=(x, y, x + w, y + h)))
+        tracks.append(Track(track_id=int(tid), frame=int(f), cls="athlete", xyxy=(x, y, x + w, y + h)))
     return tracks
+
+
+def load_gt_tracks(seq: str) -> list[Track]:
+    """GT boxes (10 full-length ids/seq) — the OCR ceiling given correct tracking."""
+    return _load_mot(GT_ROOT / seq / "gt" / "gt.txt")
+
+
+def load_tracker_tracks(seq: str, tracker: str) -> list[Track]:
+    """Real tracker output (fragmented into many short ids, id-swaps) — the true operating point."""
+    return _load_mot(TRACKERS_ROOT / tracker / "data" / f"{seq}.txt")
 
 
 def seq_names(spec: str, limit: int | None) -> list[str]:
@@ -63,17 +72,23 @@ def seq_names(spec: str, limit: int | None) -> list[str]:
     return seqs[:limit] if limit else seqs
 
 
-def aggregate(details: list[dict], hi_consensus: float = 0.6) -> dict:
+def aggregate(details: list[dict], hi_consensus: float = 0.6, min_substantial: int = 10) -> dict:
     """Coverage + consensus over per-track `read_detail` dicts (pure; unit-tested). `track_coverage` = any
     confident majority number; `hi_consensus_coverage` additionally requires >= `hi_consensus` of the reads to
-    agree (precision-controlled); `crop_read_rate` = per-crop hit rate."""
+    agree (precision-controlled); `crop_read_rate` = per-crop hit rate. `coverage_substantial` = coverage among
+    tracks long enough to have a chance (>= `min_substantial` crops) — separates fragmentation (many short
+    tracker ids can't be read) from OCR capability, so the GT->tracker drop can be attributed."""
     n_tracks = len(details)
     n_covered = n_hi = tot_crops = tot_read = 0
+    n_sub = n_sub_cov = 0
     numbers: list[str] = []
     for d in details:
         tot_crops += d["n_crops"]
         tot_read += d["n_read_crops"]
         num = d["number"]
+        if d["n_crops"] >= min_substantial:
+            n_sub += 1
+            n_sub_cov += num is not None
         if num is not None:
             n_covered += 1
             numbers.append(num)
@@ -83,18 +98,21 @@ def aggregate(details: list[dict], hi_consensus: float = 0.6) -> dict:
         "n_tracks": n_tracks,
         "track_coverage": round(n_covered / max(1, n_tracks), 3),
         "hi_consensus_coverage": round(n_hi / max(1, n_tracks), 3),
+        "coverage_substantial": round(n_sub_cov / max(1, n_sub), 3),
+        "n_substantial": n_sub,
         "crop_read_rate": round(tot_read / max(1, tot_crops), 3),
         "numbers_read": dict(Counter(numbers).most_common()),
     }
 
 
-def measure(config: dict, seqs: list[str]) -> dict:
-    """Run one JerseyOCR config over all seqs' GT tracks; aggregate coverage + consensus."""
+def measure(config: dict, seqs: list[str], source: str = "gt", tracker: str = "bytetrack_ft") -> dict:
+    """Run one JerseyOCR config over all seqs' tracks (GT or real tracker output); aggregate coverage."""
     ocr = JerseyOCR(min_conf=0.4, min_votes=2, **config)
     details: list[dict] = []
     for seq in seqs:
         frames = load_mot_sequence(FRAMES_ROOT / seq)
-        details.extend(ocr.read_detail(load_gt_tracks(seq), frames).values())
+        tracks = load_gt_tracks(seq) if source == "gt" else load_tracker_tracks(seq, tracker)
+        details.extend(ocr.read_detail(tracks, frames).values())
     return aggregate(details)
 
 
@@ -103,30 +121,41 @@ def main() -> None:
     ap.add_argument("--seqs", default="all", help="'all', or comma-separated sequence names")
     ap.add_argument("--limit-seqs", type=int, default=None, help="cap number of sequences (for a fast ablation)")
     ap.add_argument("--configs", default=None, help="comma-separated config names; default = full ablation")
+    ap.add_argument("--source", default="gt", choices=["gt", "tracker"], help="track source: GT boxes or tracker")
+    ap.add_argument("--tracker", default="bytetrack_ft", help="tracker name under trackers/ (--source tracker)")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
     seqs = seq_names(args.seqs, args.limit_seqs)
+    if args.source == "tracker":                         # keep only seqs this tracker actually produced
+        seqs = [s for s in seqs if (TRACKERS_ROOT / args.tracker / "data" / f"{s}.txt").is_file()]
     names = args.configs.split(",") if args.configs else list(CONFIGS)
-    print(f"sequences ({len(seqs)}): {seqs}")
+    src_label = "GT boxes" if args.source == "gt" else f"tracker output ({args.tracker})"
+    print(f"source: {src_label}  |  sequences ({len(seqs)}): {seqs}")
 
     results = {}
     for name in names:
         print(f"\n=== {name}: {CONFIGS[name]} ===")
-        r = measure(CONFIGS[name], seqs)
+        r = measure(CONFIGS[name], seqs, source=args.source, tracker=args.tracker)
         results[name] = {"config": {**CONFIGS[name], "min_conf": 0.4, "min_votes": 2}, **r}
-        print(f"  coverage={r['track_coverage']}  hi_consensus={r['hi_consensus_coverage']}  "
+        print(f"  coverage={r['track_coverage']}  substantial={r['coverage_substantial']} "
+              f"(n={r['n_substantial']})  hi_consensus={r['hi_consensus_coverage']}  "
               f"crop_read_rate={r['crop_read_rate']}  n_tracks={r['n_tracks']}")
 
+    basis = ("SportsMOT basketball-val GT-boxed athletes (OCR isolated from tracker error)" if args.source == "gt"
+             else f"SportsMOT basketball-val REAL tracker output ({args.tracker}, HOTA 0.473) — the operating "
+                  "point; fragmented/id-swapped tracks vs GT's 10 full-length ids/seq")
     report = {
         "task": "jersey_ocr_coverage",
-        "basis": "SportsMOT basketball-val GT-boxed athletes (OCR isolated from tracker error); "
-                 "coverage not accuracy (no jersey labels); consensus = cross-frame precision proxy",
+        "source": args.source,
+        "tracker": args.tracker if args.source == "tracker" else None,
+        "basis": basis + "; coverage not accuracy (no jersey labels); consensus = cross-frame precision proxy",
         "sequences": seqs,
         "utc": datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ"),
         "results": results,
     }
-    out = Path(args.out) if args.out else Path("eval_results") / f"jersey_ocr_{report['utc']}.json"
+    tag = "" if args.source == "gt" else f"{args.source}_"
+    out = Path(args.out) if args.out else Path("eval_results") / f"jersey_ocr_{tag}{report['utc']}.json"
     out.write_text(json.dumps(report, indent=2))
     print(f"\nwrote {out}")
 

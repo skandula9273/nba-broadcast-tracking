@@ -40,7 +40,10 @@ from ground truth.** Specifically:
   **73% of tracks** get a confident majority number (**47%** with ≥60% cross-frame agreement), from a 16%
   per-crop read rate — plausible jerseys (`#15 #6 #5 #32 #30 #23…`). This is **coverage, not accuracy**
   (SportsMOT has no jersey labels; consensus is the precision proxy) and is the OCR ceiling *given correct
-  tracking* — on real tracker output, association error lowers it. An additive ablation attributes the lift
+  tracking*. On **real tracker output** (`bytetrack_ft`, HOTA 0.473, `make jersey-eval-tracker`) coverage
+  roughly **halves to 0.365** — but only because fragmentation explodes 150 GT ids → **949 tracker-ids**; among
+  substantial tracks (≥10 crops) it's **0.56**, and the per-crop read rate is **unchanged (0.16)**. So the drop
+  is **association, not OCR** — the same dominant cost inc-07 found. An additive ablation attributes the GT lift
   (0.175 → 0.73) to **evidence, not image enhancement**: more crops and even-sampling each ~double coverage;
   CLAHE contrast *hurt*. Tracks without a number fall back to the appearance cluster. `analytics/possessions.py`
   then computes honest **player-configuration** analytics — team spacing + a ball-free transition/halfcourt

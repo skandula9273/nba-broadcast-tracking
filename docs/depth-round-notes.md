@@ -504,11 +504,19 @@ auto-registers a frame -> `court_xy`.
 - **Result (winner on all 15 seqs, 150 GT tracks):** coverage **0.733**, high-consensus coverage **0.467**,
   per-crop read rate 0.162; numbers read are plausible jerseys (15, 6, 5, 32, 30, 23…). The simpler no-CLAHE
   config won and is promoted to the `JerseyOCR` defaults — **rule #7 (simpler-first) vindicated by measurement**.
-- **Honest framing:** 0.73 is coverage on **GT boxes** — the OCR ceiling given correct tracking. On real
-  tracker output association error (id-swaps, fragments) will lower it; and it's coverage, not verified
-  accuracy. The old "~40%" was ad-hoc on tracker output — a different, dirtier basis; the new number is
-  reproducible and isolates the stage. The depth-round lesson repeats: *measure the stage in isolation, hold
-  the precision bar fixed, and attribute the win to the actual lever.*
+- **Honest framing:** 0.73 is coverage on **GT boxes** — the OCR ceiling given correct tracking. It's coverage,
+  not verified accuracy. The old "~40%" was ad-hoc on tracker output — a different, dirtier basis; the new
+  number is reproducible and isolates the stage. The depth-round lesson repeats: *measure the stage in
+  isolation, hold the precision bar fixed, and attribute the win to the actual lever.*
+- **Then measured the real operating point (`make jersey-eval-tracker`, `bytetrack_ft` HOTA 0.473, all 15
+  seqs):** raw per-id coverage **0.73 → 0.365** — but the drop is **association, not OCR**. The tracker
+  fragments 150 GT ids into **949 tracker-ids** (6.3×), so most ids are short fragments that never accumulate
+  `min_votes`; the per-crop read rate is **unchanged (0.162 → 0.161)**, and among **substantial tracks (≥10
+  crops) coverage is 0.56**. Added `coverage_substantial` precisely to separate fragmentation from OCR
+  capability. This is the honest re-ID operating point, and it **re-derives inc-07's headline from a different
+  stage**: reconstruction cost concentrates in **tracking association**, not the per-frame perception — better
+  association (fewer fragments/id-swaps) recovers most of the jersey-coverage gap, not a better OCR model.
+  Committed `eval_results/jersey_ocr_tracker_*.json`.
 
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
