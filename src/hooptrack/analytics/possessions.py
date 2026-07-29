@@ -67,14 +67,53 @@ def segment_phases(result: TrackResult, min_run: int = 5) -> list[dict]:
     return merged or runs
 
 
-def segment_possessions(result: TrackResult) -> dict:
-    """The ball is not tracked (player-only detector), so this returns the ball-free PHASE segmentation as the
-    closest honest proxy for possessions, with that stated in the payload."""
+def ball_handler_timeline(result: TrackResult, ball_by_frame: dict) -> dict[int, int]:
+    """Per frame with a ball: the track_id of the nearest player (image-coord box center vs ball center) = the
+    ball-handler. `ball_by_frame` = {frame: (cx, cy, conf)} from `detect.ball.BallDetector`."""
+    by_frame: dict[int, list] = defaultdict(list)
+    for t in result.tracks:
+        x1, y1, x2, y2 = t.xyxy
+        by_frame[t.frame].append((t.track_id, (x1 + x2) / 2.0, (y1 + y2) / 2.0))
+    timeline: dict[int, int] = {}
+    for f, (bx, by, _conf) in ball_by_frame.items():
+        players = by_frame.get(f)
+        if players:
+            timeline[f] = int(min(players, key=lambda p: (p[1] - bx) ** 2 + (p[2] - by) ** 2)[0])
+    return timeline
+
+
+def ball_possession(result: TrackResult, ball_by_frame: dict, min_run: int = 5, max_gap: int = 10) -> dict:
+    """TRUE possession segmentation where the ball is visible: runs of frames with a stable ball-handler; a
+    handler change is a pass/turnover. Coverage = fraction of frames with a ball (COCO sports-ball; no ball GT,
+    so coverage not accuracy). Shots still need a hoop/trajectory model — stated, not faked."""
+    timeline = ball_handler_timeline(result, ball_by_frame)
+    fs = sorted(timeline)
+    runs: list[dict] = []
+    for f in fs:
+        h = timeline[f]
+        if runs and runs[-1]["handler"] == h and f - runs[-1]["end"] <= max_gap:
+            runs[-1]["end"] = f
+        else:
+            runs.append({"handler": h, "start": f, "end": f})
+    n_total = len({t.frame for t in result.tracks})
+    changes = sum(1 for i in range(1, len(fs)) if timeline[fs[i]] != timeline[fs[i - 1]])
+    return {"source": "ball (COCO sports-ball) -> nearest-player handler; coverage not accuracy (no ball GT); "
+            "shots need a hoop model",
+            "ball_frames": len(timeline), "frames_total": n_total,
+            "ball_coverage": round(len(timeline) / max(1, n_total), 3),
+            "n_handler_changes": changes, "possessions": [r for r in runs if r["end"] - r["start"] + 1 >= min_run] or runs}
+
+
+def segment_possessions(result: TrackResult, ball_by_frame: dict | None = None) -> dict:
+    """With a ball -> TRUE possessions (ball-handler runs). Without -> the ball-free PHASE segmentation, stated
+    honestly as a proxy."""
+    if ball_by_frame:
+        return ball_possession(result, ball_by_frame)
     return {"note": "ball not tracked (player-only detector) -> phases, NOT true ball possessions",
             "coords": _coords(result), "phases": segment_phases(result)}
 
 
-def analytics(result: TrackResult) -> dict:
-    """Everything computable from player-only tracks: spacing + phase segmentation (no ball -> no shots)."""
+def analytics(result: TrackResult, ball_by_frame: dict | None = None) -> dict:
+    """Player-config analytics (spacing + phases), upgraded to TRUE possessions when a ball track is supplied."""
     return {"n_tracks": len({t.track_id for t in result.tracks}), "spacing": spacing(result),
-            "possessions": segment_possessions(result)}
+            "possessions": segment_possessions(result, ball_by_frame)}

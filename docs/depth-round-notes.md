@@ -592,6 +592,21 @@ auto-registers a frame -> `court_xy`.
   Stated as such. `make retrieve-semantic-validate`; +2 SupCon tests. The path forward for the real product:
   real play-type labels (or richer proxies) + this supervised objective.
 
+### Ball tracking — COCO 'sports ball', no training; measured ~24% coverage → true possessions where visible (2026-07-29)
+- **The gap:** single-class athlete detector has no ball, so analytics could only do spacing/phases — true
+  possessions/shots need ball control. The pragmatic path needs **no new training**: COCO yolov8m already has a
+  'sports ball' class (32).
+- **Measured, not assumed:** `detect/ball.py` (BallDetector) + `eval_ball.py` (`make ball-eval`) — coverage on
+  2516 sampled SportsMOT frames: **24% @ conf 0.25** (15% @ 0.35, 8% @ 0.5), mean conf 0.41. So COCO finds the
+  basketball in ~a quarter of frames — broadcast basketballs are small/fast/occluded, and there's no ball GT so
+  it's coverage, not accuracy (same honest framing as jersey OCR). A single ball-friendly clip read 45%; the
+  full-set 24% is the honest number.
+- **What it unlocks (and doesn't):** `analytics.ball_possession` attributes the ball-handler (nearest player to
+  the ball) and segments **true possessions** (handler runs; a change = pass/turnover) on the frames the ball is
+  visible — wired into `POST /track` behind `detect.ball`. Shots still need a hoop/trajectory model (stated, not
+  faked). The honest bound: a *quarter*-coverage ball supports partial possession analytics; robust ball
+  tracking needs a basketball-specific detector + annotations. Reported as-is.
+
 ### Serving latency baseline — the missing operating point for the V2 Pareto (2026-07-29)
 - **Why:** "serving optimization + Pareto frontier" is the headline V2 item, but there was no *before* number —
   you can't build a Pareto without a baseline on the real hardware. `serve/bench.py` (`make serve-bench`) times

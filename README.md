@@ -52,8 +52,11 @@ from ground truth.** Specifically:
   (0.175 → 0.73) to **evidence, not image enhancement**: more crops and even-sampling each ~double coverage;
   CLAHE contrast *hurt*. Tracks without a number fall back to the appearance cluster. `analytics/possessions.py`
   then computes honest **player-configuration** analytics — team spacing + a ball-free transition/halfcourt
-  phase segmentation (no ball tracked → no true possessions/shots, stated in the payload), wired into
-  `POST /track`. Default `reid=None`.
+  phase segmentation — upgraded to **true possessions** (nearest-player ball-handler runs) when a ball track is
+  supplied. Ball detection uses COCO 'sports ball' (class 32, **no training**, `detect.ball`), measured at
+  **~24% frame coverage @ conf 0.25** (15% @ 0.35, 8% @ 0.5; `make ball-eval`) — a sparse-but-real signal, so
+  possessions are computed on the frames the ball is visible; shots still need a hoop model (stated, not faked).
+  Wired into `POST /track`. Default `reid=None`, `detect.ball=false`.
 - **retrieval / play-embedding (the centerpiece) — trained on SportVU GT, but real tracker output is now wired
   in.** The corpus and encoder training are fed by `possessions.build_corpus()` (SportVU 2015-16 GT), and inc-07
   **simulates** perception error on those GT tracks. NEW (`retrieve/end2end.py`, `reconstruct.tracks_to_tensor`):

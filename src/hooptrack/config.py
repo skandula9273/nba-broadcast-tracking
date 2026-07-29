@@ -36,6 +36,8 @@ class DetectConfig(BaseModel):
     imgsz: int = 1280                    # YOLO inference size; SportsMOT frames are 720p broadcast
     batch: int = 16                      # frames per YOLO forward pass (MPS-friendly)
     person_class: int = 0                # COCO 'person' index — the SportsMOT athlete proxy (pretrained, not fine-tuned)
+    ball: bool = False                   # also run a COCO 'sports ball' pass -> true possessions where visible
+    ball_conf: float = 0.25              # ball detection conf (broadcast basketballs are small/fast -> ~45% coverage)
 
 
 class TrackConfig(BaseModel):

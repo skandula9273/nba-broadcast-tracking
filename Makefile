@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-semantic retrieve-semantic-validate homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-semantic retrieve-semantic-validate homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -16,6 +16,9 @@ data:  ## fetch/prepare datasets into data/ (SportsMOT, DeepSportradar) — see 
 
 detect:  ## run detection on a clip/dataset
 	python -m hooptrack.detect.run --config configs/v0.yaml
+
+ball-eval:  ## COCO 'sports ball' coverage on SportsMOT (no training) -> eval_results/ball_coverage_*.json
+	python -m hooptrack.detect.eval_ball --every 5
 
 detect-eval:  ## detection mAP on the fine-tuned weights -> eval_results/detection_*.json (increment-04)
 	python -m hooptrack.detect.eval --config configs/v0_finetuned.yaml

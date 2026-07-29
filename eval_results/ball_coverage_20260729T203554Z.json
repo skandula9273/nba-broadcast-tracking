@@ -1,0 +1,86 @@
+{
+  "timestamp": "2026-07-29T20:35:54.215978+00:00",
+  "increment": "ball-detection-coverage",
+  "stage": "COCO 'sports ball' (class 32) coverage on SportsMOT broadcast \u2014 no training",
+  "basis": "coverage = fraction of sampled frames with a ball >= threshold; NOT accuracy (no ball GT); the ball is the missing piece for true possessions/shots",
+  "dataset": {
+    "source": "SportsMOT basketball-val",
+    "n_seqs": 15,
+    "sampled_every": 5,
+    "n_frames_sampled": 2516,
+    "imgsz": 1280
+  },
+  "coverage": {
+    "coverage@0.25": 0.236,
+    "coverage@0.35": 0.154,
+    "coverage@0.5": 0.083
+  },
+  "conf_distribution": {
+    "mean": 0.413,
+    "p50": 0.359,
+    "max": 0.867
+  },
+  "per_seq": {
+    "v_00HRwkvvjtQ_c001": {
+      "n_frames": 233,
+      "coverage@0.25": 0.468
+    },
+    "v_00HRwkvvjtQ_c003": {
+      "n_frames": 233,
+      "coverage@0.25": 0.425
+    },
+    "v_00HRwkvvjtQ_c005": {
+      "n_frames": 119,
+      "coverage@0.25": 0.437
+    },
+    "v_00HRwkvvjtQ_c007": {
+      "n_frames": 142,
+      "coverage@0.25": 0.549
+    },
+    "v_00HRwkvvjtQ_c008": {
+      "n_frames": 195,
+      "coverage@0.25": 0.323
+    },
+    "v_00HRwkvvjtQ_c011": {
+      "n_frames": 147,
+      "coverage@0.25": 0.388
+    },
+    "v_4r8QL_wglzQ_c001": {
+      "n_frames": 178,
+      "coverage@0.25": 0.011
+    },
+    "v_5ekaksddqrc_c001": {
+      "n_frames": 110,
+      "coverage@0.25": 0.109
+    },
+    "v_5ekaksddqrc_c002": {
+      "n_frames": 127,
+      "coverage@0.25": 0.22
+    },
+    "v_5ekaksddqrc_c003": {
+      "n_frames": 243,
+      "coverage@0.25": 0.21
+    },
+    "v_5ekaksddqrc_c004": {
+      "n_frames": 165,
+      "coverage@0.25": 0.57
+    },
+    "v_5ekaksddqrc_c005": {
+      "n_frames": 200,
+      "coverage@0.25": 0.15
+    },
+    "v_BgwzTUxJaeU_c008": {
+      "n_frames": 100,
+      "coverage@0.25": 0.17
+    },
+    "v_BgwzTUxJaeU_c012": {
+      "n_frames": 124,
+      "coverage@0.25": 0.113
+    },
+    "v_BgwzTUxJaeU_c014": {
+      "n_frames": 200,
+      "coverage@0.25": 0.16
+    }
+  },
+  "notes": "COCO yolov8m sports-ball, no fine-tuning. Sparse but real signal -> enables ball-handler attribution where the ball is visible (analytics.ball_possession); precise shot detection needs a basketball-specific detector + annotations. Reported as-is."
+}

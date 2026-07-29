@@ -74,6 +74,12 @@ def track(req: TrackRequest) -> dict:
 
     cfg, pipe = _pipeline()
     result = pipe.run(seq)   # THE shared pipeline path; homography/re-ID disabled in config -> detect->track only
+
+    ball_by_frame = None     # optional COCO sports-ball pass -> true possessions where the ball is visible
+    if cfg.detect.ball:
+        from ..detect.ball import BallDetector
+        ball_by_frame = BallDetector(device=cfg.detect.device, conf=cfg.detect.ball_conf,
+                                     imgsz=cfg.detect.imgsz).detect(seq)
     return {
         "sequence": seq.name,
         "source": source_kind,
@@ -86,7 +92,7 @@ def track(req: TrackRequest) -> dict:
         },
         "n_ids": result.meta.get("n_ids"),
         "n_tracks": len(result.tracks),
-        "analytics": analytics(result),   # player-only: spacing + ball-free phases (no ball -> no shots)
+        "analytics": analytics(result, ball_by_frame),   # true possessions if ball on; else spacing + phases
         "coords": "image xyxy — court_xy & player_id are null (homography/re-ID not wired)",
         "tracks": [
             {
