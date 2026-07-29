@@ -39,8 +39,11 @@ from ground truth.** Specifically:
   (`make jersey-eval`) on **SportsMOT GT-boxed athletes** (OCR isolated from tracker error; 150 tracks):
   **73% of tracks** get a confident majority number (**47%** with ≥60% cross-frame agreement), from a 16%
   per-crop read rate — plausible jerseys (`#15 #6 #5 #32 #30 #23…`). This is **coverage, not accuracy**
-  (SportsMOT has no jersey labels; consensus is the precision proxy) and is the OCR ceiling *given correct
-  tracking*. On **real tracker output** (`bytetrack_ft`, HOTA 0.473, `make jersey-eval-tracker`) coverage
+  (SportsMOT has no jersey labels; consensus is the precision proxy). A synthetic accuracy study
+  (`make jersey-accuracy`, known labels) shows the OCR is **~0.94–1.0 accurate at real jersey heights**
+  (median **63px**) and only degrades below ~24px — so the real coverage loss is **pose / motion-blur /
+  occlusion, not resolution or OCR capability** (a non-obvious, actionable finding: select frontal frames /
+  deblur, don't upscale). Coverage is the OCR ceiling *given correct tracking*. On **real tracker output** (`bytetrack_ft`, HOTA 0.473, `make jersey-eval-tracker`) coverage
   roughly **halves to 0.365** — but only because fragmentation explodes 150 GT ids → **949 tracker-ids**; among
   substantial tracks (≥10 crops) it's **0.56**, and the per-crop read rate is **unchanged (0.16)**. So the drop
   is **association, not OCR** — the same dominant cost inc-07 found. A cheap **fragment-stitching** lever

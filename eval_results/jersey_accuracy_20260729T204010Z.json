@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-07-29T20:40:10.525225+00:00",
+  "increment": "jersey-ocr-accuracy",
+  "stage": "jersey-OCR read ACCURACY vs crop height (synthetic labels \u2014 coverage can't measure this)",
+  "basis": "rendered digits (KNOWN labels) degraded to broadcast crop heights; accuracy_of_reads = of the committed reads, fraction correct. Synthetic clean font -> OPTIMISTIC bound on real accuracy.",
+  "real_jersey_region_heights_px": {
+    "p10": 49.6,
+    "p50": 63.0,
+    "p90": 82.7,
+    "n_boxes": 118825
+  },
+  "blur": true,
+  "trials_per_height": 100,
+  "accuracy_curve": {
+    "h12px": {
+      "read_rate": 0.0,
+      "accuracy_of_reads": null,
+      "accuracy_overall": 0.0
+    },
+    "h16px": {
+      "read_rate": 0.24,
+      "accuracy_of_reads": 0.5,
+      "accuracy_overall": 0.12
+    },
+    "h20px": {
+      "read_rate": 0.48,
+      "accuracy_of_reads": 0.625,
+      "accuracy_overall": 0.3
+    },
+    "h24px": {
+      "read_rate": 0.77,
+      "accuracy_of_reads": 0.87,
+      "accuracy_overall": 0.67
+    },
+    "h32px": {
+      "read_rate": 0.92,
+      "accuracy_of_reads": 0.935,
+      "accuracy_overall": 0.86
+    },
+    "h48px": {
+      "read_rate": 0.96,
+      "accuracy_of_reads": 1.0,
+      "accuracy_overall": 0.96
+    }
+  },
+  "notes": "Real broadcast accuracy needs a labeled jersey set (e.g. SoccerNet jersey GT) and will be LOWER than this synthetic ceiling (fabric distortion, motion blur, non-standard fonts). Combined with the measured coverage (~24-45%), this bounds the operating point: even where a number is read, accuracy falls off sharply below ~16-20px jersey height \u2014 which is where much of broadcast sits. Reported as-is."
+}

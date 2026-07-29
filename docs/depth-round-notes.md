@@ -592,6 +592,21 @@ auto-registers a frame -> `court_xy`.
   Stated as such. `make retrieve-semantic-validate`; +2 SupCon tests. The path forward for the real product:
   real play-type labels (or richer proxies) + this supervised objective.
 
+### Jersey-OCR ACCURACY — resolution isn't the bottleneck; pose/blur/occlusion is (2026-07-29)
+- **The gap #5:** coverage says how often a track gets *a* number, never whether it's *right* (no jersey
+  labels). The study leaned on coverage as a lower bound on identity; accuracy was unmeasured.
+- **How, without labels:** `eval_jersey_accuracy.py` (`make jersey-accuracy`) renders digits with KNOWN labels,
+  degrades them to broadcast crop heights, and measures easyocr accuracy vs height — anchored to the REAL
+  jersey-region height distribution from 118,825 GT boxes. Synthetic clean font = an OPTIMISTIC bound (stated).
+- **Accuracy vs height:** 48px **1.0**, 32px 0.94, 24px 0.87, 20px 0.63, 16px 0.50, 12px 0 (unreadable). The
+  **real** jersey-region heights are **median 63px** (p10 50, p90 83) — i.e. mostly in the near-perfect regime.
+- **The reframing (the actual finding):** at real broadcast resolution the OCR is **not** resolution-limited —
+  synthetic accuracy is ~1.0 at 63px, yet real coverage is only ~24%. So the gap is **pose (number not facing
+  camera), motion blur, and occlusion**, not crop size or OCR capability. Actionable: prioritize frontal-frame
+  selection / deblurring / a pose-robust number model — **not** upscaling. Honest limit: real accuracy needs a
+  labeled broadcast set (SoccerNet jersey GT) and will sit below the synthetic ceiling, but the
+  resolution-is-sufficient conclusion is robust (real heights >> the resolution-limited regime).
+
 ### Ball tracking — COCO 'sports ball', no training; measured ~24% coverage → true possessions where visible (2026-07-29)
 - **The gap:** single-class athlete detector has no ball, so analytics could only do spacing/phases — true
   possessions/shots need ball control. The pragmatic path needs **no new training**: COCO yolov8m already has a

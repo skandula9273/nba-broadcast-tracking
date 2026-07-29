@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-semantic retrieve-semantic-validate homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-semantic retrieve-semantic-validate homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -73,6 +73,9 @@ jersey-eval-tracker:  ## jersey-OCR coverage on REAL tracker output (the operati
 
 jersey-eval-stitch:  ## jersey-OCR coverage on tracker output WITH fragment stitching (the recovery lever)
 	python -m hooptrack.reid.eval_jersey --source tracker --tracker bytetrack_ft --seqs all --configs band_noprep --stitch
+
+jersey-accuracy:  ## jersey-OCR ACCURACY vs crop height (synthetic labels) -> eval_results/jersey_accuracy_*.json
+	python -m hooptrack.reid.eval_jersey_accuracy
 
 test:  ## run the test suite
 	pytest -q
