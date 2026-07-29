@@ -71,6 +71,10 @@ class ReidConfig(BaseModel):
                                          # individual identity actually needs.
     jersey_ocr: bool = False             # overlay jersey-number OCR (easyocr) -> individual player_id where read
     jersey_min_votes: int = 2            # a track needs >= this many agreeing digit reads to accept a number
+    stitch: bool = False                 # gap-close tracker fragments before re-ID so a player's split ids pool
+                                         # their jersey votes (measured: coverage 0.365->0.479, consensus rises)
+    stitch_gap: int = 30                 # max frame gap (frames) to link two fragments of the same player
+    stitch_dist: float = 2.0             # max seam distance in box-diagonals
 
 
 class EmbeddingConfig(BaseModel):

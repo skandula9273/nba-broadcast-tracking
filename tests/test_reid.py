@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from hooptrack.config import ReidConfig, TrackConfig
+from hooptrack.pipeline import Track
 from hooptrack.reid.identify import ReIDIdentifier, agglomerate, build_reid
 from hooptrack.reid.jersey import majority_number
 
@@ -47,3 +48,28 @@ def test_build_reid_carries_jersey_flag():
     on = SimpleNamespace(reid=ReidConfig(enabled=True, jersey_ocr=True, jersey_min_votes=3), track=TrackConfig())
     r = build_reid(on)
     assert r.jersey_ocr is True and r.jersey_min_votes == 3
+
+
+def test_build_reid_carries_stitch_config():
+    on = SimpleNamespace(reid=ReidConfig(enabled=True, stitch=True, stitch_gap=45, stitch_dist=1.5),
+                         track=TrackConfig())
+    r = build_reid(on)
+    assert r.stitch is True and r.stitch_gap == 45 and r.stitch_dist == 1.5
+
+
+def test_identify_stitch_pools_fragments_into_one_player(monkeypatch):
+    # two temporally-disjoint, spatially-adjacent fragments = the same player split by the tracker.
+    tracks = ([Track(1, f, "athlete", (90, 0, 110, 40)) for f in range(1, 6)]
+              + [Track(2, f, "athlete", (95, 0, 115, 40)) for f in range(8, 13)])
+
+    # mock OSNet: one ORTHOGONAL embedding per (canonical) track id -> without stitching, ids 1 and 2 would be
+    # distinct appearance clusters; with stitching they collapse to one canonical id -> one identity.
+    def fake_emb(self, cts, frames):
+        cids = sorted({t.track_id for t in cts})
+        return {cid: np.eye(len(cids))[i] for i, cid in enumerate(cids)}
+
+    monkeypatch.setattr(ReIDIdentifier, "track_embeddings", fake_emb)
+    out = ReIDIdentifier(stitch=True, jersey_ocr=False).identify(tracks, frames=[])
+    pids = {t.track_id: t.player_id for t in out}
+    assert set(pids) == {1, 2}                       # raw tracker ids preserved on the output tracks
+    assert pids[1] == pids[2] is not None            # but pooled into ONE player_id by stitching
