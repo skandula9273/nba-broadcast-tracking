@@ -24,12 +24,13 @@ from ground truth.** Specifically:
   YOLO detection → ByteTrack/BoT-SORT tracking on real frames, producing MOT tracks scored by TrackEval. This
   is the only perception path that executes.
 - **homography — full stage: a trained keypoint front-end registers frames automatically.** The
-  `CourtHomography` stage (inc-05 solver) is wired into `Pipeline`, and a **learned court-keypoint detector**
-  (resnet18 heatmap net, `homography.keypoint_weights`) now supplies the correspondences *from a frame image* —
-  no manual calibration. Measured: reprojection error **503px floor → 40px median** on **held-out arenas** (99%
-  registered), so the pipeline projects tracks to `court_xy` from an image (verified on an unseen arena).
-  Caveat: trained on DeepSportradar **fixed arena cameras**, not moving broadcast — broadcast generalization is
-  unproven (a stated dataset boundary). Default `homography=None`.
+  `CourtHomography` stage (inc-05 solver) + a **learned court-keypoint detector** (resnet18 heatmap net,
+  `homography.keypoint_weights`) supply correspondences *from a frame image* — no manual calibration. With
+  domain augmentation (perspective + photometric), reprojection error **503px floor → 16px median** on
+  **held-out arenas** (100% registered; 40px without augmentation). **But it does NOT transfer to broadcast:**
+  on SportsMOT it produces ~no confident keypoints (mean peak 0.13), so `court_xy` stays null there. It's
+  trained on DeepSportradar **fixed arena cameras** — broadcast registration needs broadcast training data
+  (aligned court GT), a fundamental data boundary augmentation can't cross. Default `homography=None`.
 - **re-ID — appearance clusters + jersey-number OCR; analytics — stub.** `reid/identify.py` runs **OSNet
   appearance re-ID** (`player_id` = cluster `p{k}`) — but appearance can't separate same-uniform players (OSNet
   cosines smear **0.32–0.87, no clean gap**), so with `reid.jersey_ocr` it **overlays jersey-number OCR**
@@ -99,7 +100,7 @@ flowchart LR
 ```
 
 **Legend:** green = runs end to end · yellow = real but limited stage (homography auto-registers via a trained
-keypoint detector — 40px on held-out arenas, but arena-camera-trained, not broadcast-proven; re-ID =
+keypoint detector — 16px on held-out arenas, but arena-camera-trained, does NOT transfer to broadcast; re-ID =
 appearance clusters + jersey-number OCR, individual identity for ~40% of tracks; both `None` by default) ·
 red dashed = stub
 (`NotImplementedError` / never produced). The retrieval centerpiece is fed from SportVU

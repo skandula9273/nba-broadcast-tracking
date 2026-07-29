@@ -38,15 +38,47 @@ def _prep(instants):
         img = cv2.imread(it["image"])
         if img is None:
             continue
-        out.append({"img": cv2.resize(img, (IN_W, IN_H)), "w": it["w"], "h": it["h"],
-                    "kps": it["gt_keypoints"], "H_gt": it["H_gt"]})
+        w, h = it["w"], it["h"]
+        kp_in = {n: (u * IN_W / w, v * IN_H / h) for n, (u, v) in it["gt_keypoints"].items()}
+        out.append({"img": cv2.resize(img, (IN_W, IN_H)), "kp_in": kp_in, "w": w, "h": h, "H_gt": it["H_gt"]})
     return out
 
 
-def _batch(samples, device):
-    x = torch.stack([preprocess(s["img"]) for s in samples]).to(device)
-    hm, mask = zip(*(make_target(s["kps"], s["w"], s["h"]) for s in samples))
-    return (x, torch.from_numpy(np.stack(hm)).to(device), torch.from_numpy(np.stack(mask)).to(device))
+def _augment(img, kp_in, rng):
+    """Domain augmentation to force viewpoint/lighting robustness (the broadcast-gap mitigation, no GT for it):
+    a random PERSPECTIVE warp (jitter the 4 corners) + photometric brightness/contrast/blur. Transforms the
+    keypoints with the image; keypoints warped out of frame are dropped (masked)."""
+    import cv2
+
+    from .keypoint_net import IN_H, IN_W
+    src = np.float32([[0, 0], [IN_W, 0], [IN_W, IN_H], [0, IN_H]])
+    dst = (src + rng.uniform(-0.12, 0.12, src.shape) * np.float32([IN_W, IN_H])).astype(np.float32)
+    M = cv2.getPerspectiveTransform(src, dst)
+    img = cv2.warpPerspective(img, M, (IN_W, IN_H), borderMode=cv2.BORDER_REPLICATE)
+    kp2 = {}
+    for n, (u, v) in kp_in.items():
+        p = M @ np.array([u, v, 1.0])
+        u2, v2 = p[0] / p[2], p[1] / p[2]
+        if 0 <= u2 < IN_W and 0 <= v2 < IN_H:
+            kp2[n] = (u2, v2)
+    im = np.clip(img.astype(np.float32) * rng.uniform(0.7, 1.3) + rng.uniform(-20, 20), 0, 255)
+    if rng.random() < 0.3:
+        k = int(rng.choice([3, 5]))
+        im = cv2.GaussianBlur(im, (k, k), 0)
+    return im.astype(np.uint8), kp2
+
+
+def _batch(samples, device, rng=None):
+    from .keypoint_net import IN_H, IN_W
+    imgs, hms, masks = [], [], []
+    for s in samples:
+        img, kp = _augment(s["img"], s["kp_in"], rng) if rng is not None else (s["img"], s["kp_in"])
+        imgs.append(preprocess(img))
+        hm, mask = make_target(kp, IN_W, IN_H)
+        hms.append(hm)
+        masks.append(mask)
+    return (torch.stack(imgs).to(device), torch.from_numpy(np.stack(hms)).to(device),
+            torch.from_numpy(np.stack(masks)).to(device))
 
 
 def _eval(model, val, device, conf) -> tuple[list[float], int]:
@@ -87,7 +119,8 @@ def run(args) -> dict:
         perm = rng.permutation(len(tr))
         losses = []
         for i in range(0, len(tr), args.batch):
-            x, hm, mask = _batch([tr[j] for j in perm[i:i + args.batch]], args.device)
+            x, hm, mask = _batch([tr[j] for j in perm[i:i + args.batch]], args.device,
+                                 rng if args.augment else None)
             loss = (((model(x) - hm) ** 2).mean(dim=(2, 3)) * mask).sum() / (mask.sum() + 1e-6)
             opt.zero_grad()
             loss.backward()
@@ -119,7 +152,8 @@ def run(args) -> dict:
                   "n_params": sum(p.numel() for p in model.parameters()),
                   "input": [288, 384], "keypoints": 7},
         "training": {"epochs": args.epochs, "batch": args.batch, "lr": args.lr, "device": args.device,
-                     "seconds": round(time.time() - t0, 1), "amp": False, "curve": curve},
+                     "augment": bool(args.augment), "seconds": round(time.time() - t0, 1), "amp": False,
+                     "curve": curve},
         "results": {
             "trivial_floor_median_px": round(float(floor), 2),
             "detector_val_reproj_median_px": round(float(np.median(errs)), 2) if errs else None,
@@ -146,6 +180,7 @@ def main() -> None:
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--eval-every", type=int, default=5)
     ap.add_argument("--conf", type=float, default=0.3)
+    ap.add_argument("--augment", type=int, default=1)      # perspective + photometric domain augmentation
     args = ap.parse_args()
 
     report = run(args)

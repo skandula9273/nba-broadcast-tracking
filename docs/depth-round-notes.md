@@ -475,6 +475,14 @@ auto-registers a frame -> `court_xy`.
   *arenas* but NOT proven on broadcast (a stated boundary). Weights gitignored (a local-only model artifact).
 - **The depth-round lesson:** harness-before-modeling again — the 503px floor + the reprojection metric made
   the detector's job falsifiable, and the arena-split kept the number honest (generalization, not camera memory).
+- **Broadcast generalization (the honest negative):** added domain augmentation (perspective + photometric)
+  and retrained — it *improved* held-out-arena accuracy **40px -> 16px** (100% solve; augmentation forces
+  viewpoint/lighting robustness that helps even on unseen arena cameras). But it **did NOT bridge broadcast**:
+  on SportsMOT both models produce ~no confident keypoints (mean peak ~0.12, <=2/35 above 0.3, need >=4 to
+  register). The measured conclusion: broadcast registration is a **data** limitation, not a modelling one —
+  DeepSportradar's arena cameras are too far from broadcast, and no augmentation crosses that gap without
+  broadcast training data (aligned court GT, which doesn't exist for this project). Reported as-is; the
+  augmented model is now the default (strictly better within the arena domain).
 
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
