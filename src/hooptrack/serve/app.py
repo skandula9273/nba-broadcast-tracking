@@ -70,6 +70,8 @@ def track(req: TrackRequest) -> dict:
     if len(seq) == 0:
         raise HTTPException(400, f"no frames from '{src}'")
 
+    from ..analytics.possessions import analytics
+
     cfg, pipe = _pipeline()
     result = pipe.run(seq)   # THE shared pipeline path; homography/re-ID disabled in config -> detect->track only
     return {
@@ -84,6 +86,7 @@ def track(req: TrackRequest) -> dict:
         },
         "n_ids": result.meta.get("n_ids"),
         "n_tracks": len(result.tracks),
+        "analytics": analytics(result),   # player-only: spacing + ball-free phases (no ball -> no shots)
         "coords": "image xyxy — court_xy & player_id are null (homography/re-ID not wired)",
         "tracks": [
             {
