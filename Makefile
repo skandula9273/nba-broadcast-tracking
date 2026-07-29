@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-semantic homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -37,6 +37,9 @@ retrieve-floor:  ## recall@k FLOOR — hand-feature baseline, no learning (incre
 
 retrieve-train:  ## TRAINED trajectory transformer — contrastive InfoNCE, recall@k (increment-06b)
 	python -m hooptrack.retrieve.train --n-games 12 --epochs 300
+
+retrieve-end2end:  ## REAL tracker output -> tensor -> FAISS retrieval, reconstructed-vs-GT -> end2end_*.json
+	python -m hooptrack.retrieve.end2end
 
 retrieve-study:  ## reconstructed-vs-GT degradation study (increment-07, the headline finding)
 	python -m hooptrack.retrieve.study --n-games 12 --epochs 300

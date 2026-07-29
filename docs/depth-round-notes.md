@@ -537,6 +537,28 @@ auto-registers a frame -> `court_xy`.
   re-ID or a less-fragmenting tracker; and it's still coverage, not accuracy. Closes the arc: **diagnosis
   (association is the cost) → lever (fix association) → measured recovery, with a precision guard.**
 
+### End-to-end wire — REAL pipeline output through the retrieval core, at last (2026-07-29)
+- **The gap it closes:** the centerpiece was fed *only* SportVU GT; the inc-07 headline **simulated** perception
+  error with an order-of-magnitude budget. The two halves never touched, so a reviewer could fairly say the
+  degradation numbers were a *model* of reality, not reality.
+- **What I built:** `reconstruct.tracks_to_tensor` (pipeline `Track` output → the (T,11,2) tensor) +
+  `end2end.py` — run the **actual** tracker output (`bytetrack_ft`, HOTA 0.473) through the adapter and the
+  **real FAISS index**, measuring reconstructed-vs-GT retrieval per 48-frame window (query = tracker tensor,
+  gallery = GT tensors, relevant = same window). 255 windows over the 15 basketball-val seqs.
+- **Result: floor recall@1 0.80** (vs GT-self 1.0, chance 0.004). Real perception error costs ~20 points of
+  recall@1 — and it's a **harder hit than inc-07's simulated budget implied** (floor stayed ~0.99 there): the
+  proxy was optimistic, which is exactly why wiring the real path mattered. (Different domain/coords, so it's a
+  qualitative comparison, not a number-for-number one — stated.)
+- **Blockers made concrete (not hand-waved) by actually running it:** no ball (entity 0 zeroed — single-class
+  detector); no broadcast homography (image-coordinate foot-points, not court — so the SportVU-trained
+  transformer is **out-of-domain**, and the coordinate-agnostic **floor** is the only valid encoder here); tracker
+  fragmentation (top-10 most-present ids, canonical x-order — a dropped/duplicated player is real error that
+  shows as tensor mismatch). The single missing piece the number points at: a **broadcast-domain encoder**
+  (needs working homography or broadcast court GT).
+- **The honesty:** I led with the floor because using the domain-mismatched trained transformer would produce a
+  misleading number; the FAISS index is the real one the committed evals use; the sanity check (GT self-retrieval
+  = 1.0) confirms the windows are distinguishable, so 0.80 is reconstruction cost, not window ambiguity.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

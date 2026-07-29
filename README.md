@@ -54,10 +54,14 @@ from ground truth.** Specifically:
   then computes honest **player-configuration** analytics — team spacing + a ball-free transition/halfcourt
   phase segmentation (no ball tracked → no true possessions/shots, stated in the payload), wired into
   `POST /track`. Default `reid=None`.
-- **retrieval / play-embedding (the centerpiece) — runs, but fed from ground truth, not the pipeline.**
-  `retrieve/` imports none of `detect/`, `track/`, `homography/`, or `pipeline.py`; it is fed exclusively by
-  `possessions.build_corpus()` reading SportVU 2015-16 tracking JSON. The reconstructed-vs-GT degradation study
-  **simulates** per-stage perception error on those GT tracks — it does not run the perception pipeline.
+- **retrieval / play-embedding (the centerpiece) — trained on SportVU GT, but real tracker output is now wired
+  in.** The corpus and encoder training are fed by `possessions.build_corpus()` (SportVU 2015-16 GT), and inc-07
+  **simulates** perception error on those GT tracks. NEW (`retrieve/end2end.py`, `reconstruct.tracks_to_tensor`):
+  the **real tracker output** (`bytetrack_ft`, HOTA 0.473) is run through the tensor adapter + the real FAISS
+  index — reconstructed-vs-GT retrieval, floor **recall@1 0.80** (vs 1.0 GT-self, chance 0.004; 255 windows).
+  That's the first real end-to-end number, and it makes the blockers concrete: image coords (no broadcast
+  homography), no ball, tracker fragmentation — so the SportVU-trained transformer is out-of-domain here and the
+  coordinate-agnostic floor is the valid metric (a broadcast-domain encoder is the missing piece).
 - **serve — runs the shared detect → track pipeline, from a video clip or a MOT dir.** `POST /track`'s `source`
   is either a **video clip** (decoded to frames by `ingest.extract_frames`, OpenCV) or a prepared MOT sequence,
   and runs the **same `Pipeline` the eval calls** (detect → track), returning **image-coordinate** tracks.
@@ -107,10 +111,10 @@ flowchart LR
     DOTS --> ANA[analytics]
     SV[(SportVU GT tracking JSON)] --> CORP[build_corpus] --> ENC[play-embedding] --> IDX[(FAISS retrieval)]
     CORP --> STUDY[degradation study: GT + simulated error]
-    DOTS -. not wired .-> CORP
+    TRK -->|reconstruct.py: real recon vs GT| E2E[end2end: floor r@1 0.80] --> IDX
     SRV[serve: POST /track] -->|video clip / MOT dir| DET
 
-    class DET,TRK,CORP,ENC,IDX,STUDY,SRV run
+    class DET,TRK,CORP,ENC,IDX,STUDY,SRV,E2E run
     class HOM,RID,ANA partial
     class DOTS stub
     classDef run fill:#d6f5d6,stroke:#2a2,color:#000
@@ -122,10 +126,11 @@ flowchart LR
 keypoint detector — 16px on held-out arenas, but arena-camera-trained, does NOT transfer to broadcast; re-ID =
 appearance clusters + jersey-number OCR, individual identity for ~73% of GT-boxed tracks; analytics =
 player-configuration spacing + phases; homography/re-ID `None` by default) · red dashed = stub (top-down
-`DOTS` never produced — homography off by default). The retrieval centerpiece is fed from SportVU
-**ground truth**, not from `top-down tracks` (the `not wired` edge). **Both** the eval harness and
-`serve POST /track` call `pipeline.py` for `detect → track` (the one shared path); homography/re-ID stay
-disabled, so both stop at image-coordinate tracks (no top-down "moving dots").
+`DOTS` never produced — homography off by default). The retrieval centerpiece is **trained** on SportVU
+**ground truth**, but `reconstruct.py`/`end2end.py` now wire the **real tracker output** into the FAISS index
+(reconstructed-vs-GT, floor r@1 0.80) — in **image coordinates** (no broadcast homography), not top-down
+`DOTS`. **Both** the eval harness and `serve POST /track` call `pipeline.py` for `detect → track` (the one
+shared path); homography/re-ID stay disabled, so both stop at image-coordinate tracks (no top-down "moving dots").
 
 ## Quickstart (once implemented)
 
