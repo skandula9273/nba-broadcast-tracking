@@ -592,6 +592,22 @@ auto-registers a frame -> `court_xy`.
   Stated as such. `make retrieve-semantic-validate`; +2 SupCon tests. The path forward for the real product:
   real play-type labels (or richer proxies) + this supervised objective.
 
+### NL play query — a structured layer over the VALIDATED semantic axes, not a fake LLM (2026-07-29)
+- **The gap #9:** NL query was greenfield, and the honest objection was that an NL query over an embedding with
+  no semantics is a demo, not a feature. That objection is now answered upstream (semantic_validate: the
+  play-type axes ARE encodable), so an NL layer over them is meaningful.
+- **What I built (deliberately honest):** `nl_query.py` — `parse_query` maps free text to `{scheme: bucket}`
+  constraints by keyword over the three derived axes (transition/half-court, initiation side, ball-handler
+  change); `query_corpus` labels the corpus with the SAME functions the probe uses, filters to possessions
+  matching ALL constraints, and optionally ranks by similarity to the matched set's centroid. `make retrieve-nl`.
+- **It runs:** "half court sets on the left" -> {transition:halfcourt, side:left} -> 320 matches; "isolation on
+  the right" -> {side:right, handler:low} -> 251; "fast break with ball movement" -> {transition, handler:high}
+  -> 810 — each returning real possessions (game/eventId).
+- **Scope, stated plainly:** a keyword parser over three coarse derived axes — NOT a learned language model and
+  NOT designed set-plays. It demonstrates the text -> semantic-retrieval PATH over dimensions that are measured,
+  not assumed; the product version swaps the keyword map for a learned text encoder aligned to the supervised
+  play embedding. Grounding it in validated semantics is the whole point (the critique's exact objection).
+
 ### Detection generalization — per-game mAP is uniform (0.97–0.99), so 0.987 isn't one easy game (2026-07-29)
 - **The gap #6:** everything is small-data/single-domain, and the 0.987 detection mAP is model-*selected* on
   basketball-val — could be overfit to these specific games. A truly held-out cross-DATASET number isn't
