@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-07-29T20:07:29.213332+00:00",
+  "increment": "semantic-retrieval-validation",
+  "stage": "can an encoder trained FOR semantics do semantic play retrieval? (positive complement to the probe)",
+  "scheme": "transition",
+  "scheme_definition": "Transition vs halfcourt by how far the ball advances along-court early in the possession.",
+  "dataset": {
+    "source": "linouk23 SportVU 2015-16",
+    "split": "by game (held-out val)",
+    "n_train": 1754,
+    "n_val": 858,
+    "val_games": [
+      "01.01.2016.NYK.at.CHI",
+      "01.02.2016.BKN.at.BOS",
+      "01.02.2016.HOU.at.SAS",
+      "01.02.2016.NOP.at.DAL"
+    ],
+    "val_bucket_counts": {
+      "halfcourt": 429,
+      "transition": 429
+    }
+  },
+  "metric": "semantic precision@5 (fraction of top-5 neighbours sharing the play-type bucket; self excluded). Random baseline ~= bucket prevalence.",
+  "results_precision@5": {
+    "floor": 0.597,
+    "ssl": 0.5131,
+    "supervised": 0.9422,
+    "random": 0.496
+  },
+  "encoders": {
+    "floor": "flattened normalized trajectory (has raw ball position -> some transition signal)",
+    "ssl": "inc-06b InfoNCE on augmentation-identity (learns aug-invariance, not content)",
+    "supervised": "SAME architecture, SupCon on the play-type axis (only the objective changed)",
+    "random": "seeded unit vectors (~= bucket prevalence)"
+  },
+  "provenance": {
+    "seed": 13,
+    "device": "mps",
+    "epochs": 300,
+    "versions": {
+      "torch": "2.13.0",
+      "numpy": "2.4.6"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Derived bucket, not an annotated set-play: a supervised win shows the encoder can be STEERED to a semantic axis and generalize it to HELD-OUT GAMES (train/val split by game), i.e. semantic retrieval is achievable and the metric is sensitive -- the SSL objective was the limitation, not the task. Only variable changed vs SSL is the objective (same arch, aug, split, seed)."
+}

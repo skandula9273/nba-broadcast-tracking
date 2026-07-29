@@ -559,6 +559,23 @@ auto-registers a frame -> `court_xy`.
   misleading number; the FAISS index is the real one the committed evals use; the sanity check (GT self-retrieval
   = 1.0) confirms the windows are distinguishable, so 0.80 is reconstruction cost, not window ambiguity.
 
+### Semantic retrieval — validated as ACHIEVABLE; the SSL objective was the limitation (2026-07-29)
+- **The gap:** recall@1 0.98 is instance-invariance self-retrieval; the probe showed the SSL encoder ≈ random
+  on play-type buckets. So "find similar plays" — the actual product — had no positive evidence. A fair
+  reviewer's #1 shot: the centerpiece isn't shown to do semantic retrieval.
+- **The test (one variable):** train the SAME architecture with a **supervised-contrastive (SupCon)** loss on a
+  real play-type axis (transition vs halfcourt = fast break vs set offense), everything else identical to the
+  SSL recipe (arch, augmentation, by-game split, seed) — so the ONLY change is the objective. Score held-out-
+  **game** semantic precision@5.
+- **Result: supervised 0.942** vs SSL 0.513 (≈ random 0.496) vs floor 0.597. Semantic play retrieval **is
+  achievable** and generalizes to unseen games; the eval **is sensitive** (it cleanly separates 0.94 from 0.50);
+  and the **SSL objective was the limitation, not the task** — instance-invariance training simply doesn't
+  encode content, a supervised signal does.
+- **Honesty:** the bucket is a *derived* proxy (early ball advance), not an annotated set-play, so this validates
+  *achievability + eval sensitivity + generalization to held-out games*, not discovery of real designed plays.
+  Stated as such. `make retrieve-semantic-validate`; +2 SupCon tests. The path forward for the real product:
+  real play-type labels (or richer proxies) + this supervised objective.
+
 ### Serving latency baseline — the missing operating point for the V2 Pareto (2026-07-29)
 - **Why:** "serving optimization + Pareto frontier" is the headline V2 item, but there was no *before* number —
   you can't build a Pareto without a baseline on the real hardware. `serve/bench.py` (`make serve-bench`) times

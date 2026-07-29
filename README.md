@@ -81,7 +81,7 @@ TrackEval — arc: ByteTrack → BoT-SORT → attribution → detector fine-tune
 detector (imgsz / smaller model / quantization, trading mAP for fps); jersey-OCR re-ID is a separate, far
 heavier stage (easyocr, minutes/clip).
 
-The embedding core produced two headline findings — both about limits, both measured:
+The embedding core produced three headline findings — all measured:
 
 **(a) The learned encoder is _more fragile_ than a zero-parameter baseline under association error.** In the
 reconstructed-vs-GT degradation study, the hand-feature floor beats the trained transformer under **every**
@@ -100,11 +100,21 @@ recall from **0.94 → ~0.45–0.49**, while the order-sensitive baseline keeps 
 invariance comes from augmentation (inc-08) or from an _exactly_ permutation-invariant architecture (inc-09):
 both routes pay the same crop cost, so it tracks the invariance itself, not the method.
 
+**(c) Semantic play retrieval is achievable — the SSL _objective_ was the limitation, not the task.** The
+augmentation-SSL encoder sits at ~random on a play-type axis (transition vs halfcourt: SSL **0.513** ≈ random
+0.496 precision@5). Changing **only the objective** — same architecture, augmentation, by-game split, seed —
+to a supervised-contrastive loss on that axis lifts held-out-**game** semantic precision@5 to **0.942** (vs
+floor 0.597). So the encoder _can_ be steered to a semantic dimension and generalize it to unseen games; the
+instance-invariance objective simply doesn't. Honest caveat: the bucket is a derived proxy (early ball
+advance), not an annotated set-play — this validates achievability + eval sensitivity, not play discovery
+(`make retrieve-semantic-validate`).
+
 **What the recall number is and is not.** On the same held-out split the trained encoder scores recall@1
 **0.62 → 0.98** (floor → trained; court-mirror 0.004 → 0.999). This measures whether an augmented copy of a
 possession retrieves _its own original_ under a known augmentation family (jitter / temporal-crop /
 court-mirror) — the relevant item for query _i_ is corpus item _i_ itself. It is **instance-level invariance
-retrieval, not semantic play similarity**; there are no play-type labels in this repo. The earlier
+retrieval, not semantic play similarity** (finding (c) shows semantic retrieval is separately achievable with a
+supervised objective; there are no annotated play-type labels in this repo). The earlier
 **0.41 → 0.98** headline is **withdrawn**: 0.41 was computed on a corpus corrupted by the `_game_json`
 mtime-duplication bug, and the honest same-split floor is **0.62**.
 

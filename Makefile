@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-semantic homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-semantic retrieve-semantic-validate homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -46,6 +46,9 @@ retrieve-end2end:  ## REAL tracker output -> tensor -> FAISS retrieval, reconstr
 
 retrieve-study:  ## reconstructed-vs-GT degradation study (increment-07, the headline finding)
 	python -m hooptrack.retrieve.study --n-games 12 --epochs 300
+
+retrieve-semantic-validate:  ## VALIDATE semantic retrieval — supervised (SupCon) vs floor/SSL/random -> semantic_validate_*.json
+	python -m hooptrack.retrieve.semantic_validate --scheme transition
 
 retrieve-semantic:  ## semantic transfer probe — precision@5 by coarse play-type bucket (floor/trained/random)
 	python -m hooptrack.retrieve.semantic_probe --config configs/semantic_probe.yaml
