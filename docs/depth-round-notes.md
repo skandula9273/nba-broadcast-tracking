@@ -559,6 +559,22 @@ auto-registers a frame -> `court_xy`.
   misleading number; the FAISS index is the real one the committed evals use; the sanity check (GT self-retrieval
   = 1.0) confirms the windows are distinguishable, so 0.80 is reconstruction cost, not window ambiguity.
 
+### Broadcast-domain encoder — the trained encoder made valid end-to-end (2026-07-29)
+- **What the 0.80 pointed at:** the trained transformer was out-of-domain on image-coord broadcast tracks, so
+  end2end had to fall back to the floor. The fix is not a new architecture — it's the training DOMAIN.
+- **What I did:** `broadcast_encoder.py` trains the SAME inc-06b architecture/objective on the **image-coord
+  broadcast window tensors** (SportsMOT GT), augmentations retargeted to the reconstruction error that dominates
+  (jitter + order-perturbation + crop, `p_mirror=0` since image space isn't court-symmetric). Held out **BY
+  GAME** — train on 3 games' GT windows, evaluate reconstructed-vs-GT on the 4th game (never trained on it).
+- **Result: the in-domain encoder beats the floor** on the held-out game — recall@1 0.857 → **0.881**, recall@5
+  0.857 → **0.905**, recall@10 0.857 → **0.952**, MRR 0.862 → **0.901**. Consistent across every k (most at
+  higher k), so it's not a single-window fluke. Trained self-retrieval = 1.0 (sanity).
+- **Honest limits:** tiny broadcast supervision (213 windows / 3 games) and a small val set (42 windows on one
+  game), so this is a **proof-of-concept + honest measurement**, not a production encoder — the r@1 margin
+  (+0.024) is a few windows, but r@5/r@10/MRR all improve, which is more robust. The lesson: the trained
+  centerpiece CAN be made valid end-to-end; the blocker was domain/data, not the method — more broadcast data
+  (and working homography for court coords) extends it. Only variable changed vs inc-06b is the training domain.
+
 ### Semantic retrieval — validated as ACHIEVABLE; the SSL objective was the limitation (2026-07-29)
 - **The gap:** recall@1 0.98 is instance-invariance self-retrieval; the probe showed the SSL encoder ≈ random
   on play-type buckets. So "find similar plays" — the actual product — had no positive evidence. A fair

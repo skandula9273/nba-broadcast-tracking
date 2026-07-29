@@ -41,6 +41,13 @@ def test_keeps_only_n_players_most_present():
     assert len(filled) == 2                               # only the 2 most-present ids
 
 
+def test_game_split_groups_clips_by_game():
+    from hooptrack.retrieve.broadcast_encoder import _game
+    assert _game("v_00HRwkvvjtQ_c007") == "v_00HRwkvvjtQ"
+    assert _game("v_5ekaksddqrc_c003") == "v_5ekaksddqrc"      # trailing 'rc' not confused with the _c split
+    assert _game("v_4r8QL_wglzQ_c001") == "v_4r8QL_wglzQ"
+
+
 def test_frame_windows_non_overlapping():
     tracks = [_track(1, f, 100, 200) for f in range(1, 101)]
     wins = frame_windows(tracks, window=48)

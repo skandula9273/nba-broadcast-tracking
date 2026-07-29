@@ -60,8 +60,12 @@ from ground truth.** Specifically:
   the **real tracker output** (`bytetrack_ft`, HOTA 0.473) is run through the tensor adapter + the real FAISS
   index — reconstructed-vs-GT retrieval, floor **recall@1 0.80** (vs 1.0 GT-self, chance 0.004; 255 windows).
   That's the first real end-to-end number, and it makes the blockers concrete: image coords (no broadcast
-  homography), no ball, tracker fragmentation — so the SportVU-trained transformer is out-of-domain here and the
-  coordinate-agnostic floor is the valid metric (a broadcast-domain encoder is the missing piece).
+  homography), no ball, tracker fragmentation — so the SportVU-trained transformer is out-of-domain there and the
+  coordinate-agnostic floor is the valid metric. Training an encoder **in-domain** fixes that
+  (`retrieve/broadcast_encoder.py`, `make retrieve-bcast-encoder`): an SSL encoder trained on the image-coord
+  broadcast tensors (held out **by game**) **beats the floor** on the unseen game — recall@1 0.857 → **0.881**,
+  recall@10 0.857 → **0.952**, MRR 0.862 → **0.901** — even with tiny supervision (213 windows, 3 games). So the
+  trained centerpiece can be made valid end-to-end; more broadcast data extends it.
 - **serve — runs the shared detect → track pipeline, from a video clip or a MOT dir.** `POST /track`'s `source`
   is either a **video clip** (decoded to frames by `ingest.extract_frames`, OpenCV) or a prepared MOT sequence,
   and runs the **same `Pipeline` the eval calls** (detect → track), returning **image-coordinate** tracks.

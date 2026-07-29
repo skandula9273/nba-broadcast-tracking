@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-07-29T20:21:20.286804+00:00",
+  "increment": "broadcast-domain-encoder",
+  "stage": "in-domain SSL encoder on image-coordinate broadcast tracks, reconstructed-vs-GT on a held-out game",
+  "dataset": {
+    "source": "SportsMOT basketball-val",
+    "tracker": "bytetrack_ft",
+    "held_out_game": "v_BgwzTUxJaeU",
+    "train_games": [
+      "v_00HRwkvvjtQ",
+      "v_4r8QL_wglzQ",
+      "v_5ekaksddqrc"
+    ],
+    "n_train_windows": 213,
+    "n_val_windows": 42,
+    "chance_recall@1": 0.0238
+  },
+  "method": {
+    "query": "reconstructed window tensor",
+    "gallery": "GT window tensors (held-out game)",
+    "encoder_train": "augmentation-SSL (jitter + crop + order-perturb, p_mirror=0) on TRAIN-game GT windows; image coords",
+    "retrieval": "FAISS IndexFlatIP (cosine)"
+  },
+  "results": {
+    "floor_recon_vs_gt": {
+      "recall@1": 0.8571,
+      "recall@5": 0.8571,
+      "recall@10": 0.8571,
+      "MRR": 0.8619
+    },
+    "trained_broadcast_recon_vs_gt": {
+      "recall@1": 0.881,
+      "recall@5": 0.9048,
+      "recall@10": 0.9524,
+      "MRR": 0.9011
+    },
+    "trained_self_retrieval_sanity": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "MRR": 1.0
+    }
+  },
+  "provenance": {
+    "seed": 13,
+    "device": "mps",
+    "epochs": 300,
+    "train_seconds": 45.6,
+    "versions": {
+      "torch": "2.13.0",
+      "numpy": "2.4.6",
+      "faiss-cpu": "1.14.3"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Tiny broadcast supervision (a few hundred windows from 3 games) -> proof-of-concept + honest measurement, not a production encoder. Only change vs inc-06b is the training DOMAIN (image-coord broadcast tensors, not SportVU court). Floor is the bar; reported as-is."
+}
