@@ -1,0 +1,65 @@
+{
+  "task": "jersey_ocr_coverage",
+  "basis": "SportsMOT basketball-val GT-boxed athletes (OCR isolated from tracker error); coverage not accuracy (no jersey labels); consensus = cross-frame precision proxy",
+  "sequences": [
+    "v_00HRwkvvjtQ_c001",
+    "v_00HRwkvvjtQ_c003",
+    "v_00HRwkvvjtQ_c005",
+    "v_00HRwkvvjtQ_c007",
+    "v_00HRwkvvjtQ_c008",
+    "v_00HRwkvvjtQ_c011",
+    "v_4r8QL_wglzQ_c001",
+    "v_5ekaksddqrc_c001",
+    "v_5ekaksddqrc_c002",
+    "v_5ekaksddqrc_c003",
+    "v_5ekaksddqrc_c004",
+    "v_5ekaksddqrc_c005",
+    "v_BgwzTUxJaeU_c008",
+    "v_BgwzTUxJaeU_c012",
+    "v_BgwzTUxJaeU_c014"
+  ],
+  "utc": "20260729T124430Z",
+  "results": {
+    "band_noprep": {
+      "config": {
+        "max_crops": 40,
+        "band": [
+          0.1,
+          0.52
+        ],
+        "upscale": 4,
+        "preprocess": false,
+        "stride_sample": true,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 150,
+      "track_coverage": 0.733,
+      "hi_consensus_coverage": 0.467,
+      "crop_read_rate": 0.162,
+      "numbers_read": {
+        "15": 16,
+        "6": 12,
+        "5": 11,
+        "2": 7,
+        "14": 7,
+        "31": 6,
+        "0": 6,
+        "30": 5,
+        "32": 5,
+        "23": 4,
+        "1": 4,
+        "4": 4,
+        "10": 4,
+        "7": 4,
+        "44": 3,
+        "22": 3,
+        "13": 3,
+        "20": 2,
+        "12": 2,
+        "9": 1,
+        "11": 1
+      }
+    }
+  }
+}

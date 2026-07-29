@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic homography-frontend homography-detector test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-semantic homography-frontend homography-detector jersey-eval test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -49,6 +49,9 @@ homography-frontend:  ## court-keypoint front-end harness + trivial floor -> eva
 
 homography-detector:  ## train the court-keypoint detector (arena-split) -> weights/ + eval_results/court_keypoints_detector_*.json
 	python -m hooptrack.homography.train_keypoints --data-dir data/deepsport --epochs 40
+
+jersey-eval:  ## jersey-OCR coverage ablation on SportsMOT GT-boxed athletes -> eval_results/jersey_ocr_*.json
+	python -m hooptrack.reid.eval_jersey --limit-seqs 4
 
 test:  ## run the test suite
 	pytest -q

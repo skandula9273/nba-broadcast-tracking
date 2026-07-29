@@ -484,6 +484,32 @@ auto-registers a frame -> `court_xy`.
   broadcast training data (aligned court GT, which doesn't exist for this project). Reported as-is; the
   augmented model is now the default (strictly better within the arena domain).
 
+### Jersey-OCR coverage — the win was evidence, not enhancement (0.175 -> 0.73), and CLAHE hurt (2026-07-29)
+- **The problem:** jersey number is re-ID's only *individual*-identity signal (OSNet appearance can't split
+  same-uniform teammates — cosines smear 0.32–0.87). The initial per-track coverage was ~40%, measured ad-hoc.
+- **Harness first (again):** built `reid.eval_jersey` (`make jersey-eval`) — run easyocr over **GT-boxed
+  athletes** (SportsMOT basketball-val), so the number is the OCR stage's own capability *given correct
+  tracking*, with tracker error factored out. SportsMOT has no jersey labels, so I measure **coverage** (does a
+  track get *a* confident majority number) not accuracy, using **cross-frame vote consensus** as the precision
+  proxy (a real number reads consistently across frames; noise doesn't). Committed timestamped JSON.
+- **The anti-cheat:** the precision thresholds (`min_conf` 0.4, `min_votes` 2) were **held fixed** across the
+  whole ablation, so coverage can only rise from better *evidence*, never a lowered bar. Cheap coverage (drop
+  the thresholds) is exactly the trap here.
+- **Additive ablation + attribution (one variable at a time — like inc-03).** The big jump came from a config
+  that changed two knobs at once (crop count 15→40 **and** even-sampling), and CLAHE contrast-normalization was
+  carried along — so I disambiguated: **more crops** alone 0.175→0.35, **even-sampling** alone (spread the 15
+  crops across the whole possession so a camera-facing frame is caught) 0.175→0.30 — two *independent evidence
+  levers* that combine to 0.60. Then **removing CLAHE** lifted 0.60→**0.70** (and crop-read-rate to the best in
+  the sweep). CLAHE **hurt** both alone (0.175→0.125) and in-regime: it manufactures false digit-like reads.
+- **Result (winner on all 15 seqs, 150 GT tracks):** coverage **0.733**, high-consensus coverage **0.467**,
+  per-crop read rate 0.162; numbers read are plausible jerseys (15, 6, 5, 32, 30, 23…). The simpler no-CLAHE
+  config won and is promoted to the `JerseyOCR` defaults — **rule #7 (simpler-first) vindicated by measurement**.
+- **Honest framing:** 0.73 is coverage on **GT boxes** — the OCR ceiling given correct tracking. On real
+  tracker output association error (id-swaps, fragments) will lower it; and it's coverage, not verified
+  accuracy. The old "~40%" was ad-hoc on tracker output — a different, dirtier basis; the new number is
+  reproducible and isolates the stage. The depth-round lesson repeats: *measure the stage in isolation, hold
+  the precision bar fixed, and attribute the win to the actual lever.*
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has

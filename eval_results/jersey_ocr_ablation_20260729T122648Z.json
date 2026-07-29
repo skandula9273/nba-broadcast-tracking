@@ -1,0 +1,249 @@
+{
+  "task": "jersey_ocr_coverage_ablation",
+  "basis": "SportsMOT basketball-val GT-boxed athletes (OCR isolated from tracker error); coverage not accuracy (no jersey labels); consensus = cross-frame precision proxy",
+  "sequences": [
+    "v_00HRwkvvjtQ_c007",
+    "v_5ekaksddqrc_c001",
+    "v_BgwzTUxJaeU_c012",
+    "v_4r8QL_wglzQ_c001"
+  ],
+  "note": "Additive ablation + attribution on a 4-game subset. Coverage 0.175->0.70. Attribution: two independent EVIDENCE levers (more crops 0.175->0.35 head-sampled; even-sampling 0.175->0.30) combine to 0.60; removing CLAHE preprocess (band->band_noprep) lifts 0.60->0.70. CLAHE hurt both alone (0.175->0.125) and in-regime. min_conf/min_votes held fixed (0.4/2). Winner=band_noprep.",
+  "utc": "20260729T122648Z",
+  "results": {
+    "baseline": {
+      "config": {
+        "max_crops": 15,
+        "band": [
+          0.12,
+          0.55
+        ],
+        "upscale": 3,
+        "preprocess": false,
+        "stride_sample": false,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.175,
+      "hi_consensus_coverage": 0.125,
+      "crop_read_rate": 0.083,
+      "numbers_read": {
+        "5": 1,
+        "31": 1,
+        "10": 1,
+        "13": 1,
+        "15": 1,
+        "16": 1,
+        "7": 1
+      }
+    },
+    "preprocess": {
+      "config": {
+        "max_crops": 15,
+        "band": [
+          0.12,
+          0.55
+        ],
+        "upscale": 3,
+        "preprocess": true,
+        "stride_sample": false,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.125,
+      "hi_consensus_coverage": 0.075,
+      "crop_read_rate": 0.07,
+      "numbers_read": {
+        "5": 1,
+        "31": 1,
+        "13": 1,
+        "15": 1,
+        "16": 1
+      }
+    },
+    "upscale4": {
+      "config": {
+        "max_crops": 15,
+        "band": [
+          0.12,
+          0.55
+        ],
+        "upscale": 4,
+        "preprocess": true,
+        "stride_sample": false,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.175,
+      "hi_consensus_coverage": 0.15,
+      "crop_read_rate": 0.075,
+      "numbers_read": {
+        "5": 1,
+        "2": 1,
+        "31": 1,
+        "10": 1,
+        "13": 1,
+        "15": 1,
+        "16": 1
+      }
+    },
+    "morecrops": {
+      "config": {
+        "max_crops": 40,
+        "band": [
+          0.12,
+          0.55
+        ],
+        "upscale": 4,
+        "preprocess": true,
+        "stride_sample": true,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.6,
+      "hi_consensus_coverage": 0.375,
+      "crop_read_rate": 0.112,
+      "numbers_read": {
+        "5": 4,
+        "6": 4,
+        "15": 3,
+        "2": 2,
+        "1": 2,
+        "14": 2,
+        "13": 2,
+        "4": 2,
+        "22": 1,
+        "31": 1,
+        "0": 1
+      }
+    },
+    "band": {
+      "config": {
+        "max_crops": 40,
+        "band": [
+          0.1,
+          0.52
+        ],
+        "upscale": 4,
+        "preprocess": true,
+        "stride_sample": true,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.6,
+      "hi_consensus_coverage": 0.375,
+      "crop_read_rate": 0.119,
+      "numbers_read": {
+        "15": 5,
+        "5": 4,
+        "2": 2,
+        "0": 2,
+        "14": 2,
+        "6": 2,
+        "13": 2,
+        "22": 1,
+        "31": 1,
+        "32": 1,
+        "4": 1,
+        "7": 1
+      }
+    },
+    "crops_head": {
+      "config": {
+        "max_crops": 40,
+        "band": [
+          0.1,
+          0.52
+        ],
+        "upscale": 4,
+        "preprocess": true,
+        "stride_sample": false,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.35,
+      "hi_consensus_coverage": 0.275,
+      "crop_read_rate": 0.076,
+      "numbers_read": {
+        "2": 3,
+        "5": 2,
+        "15": 2,
+        "6": 1,
+        "31": 1,
+        "0": 1,
+        "10": 1,
+        "13": 1,
+        "14": 1,
+        "7": 1
+      }
+    },
+    "even_15": {
+      "config": {
+        "max_crops": 15,
+        "band": [
+          0.1,
+          0.52
+        ],
+        "upscale": 4,
+        "preprocess": true,
+        "stride_sample": true,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.3,
+      "hi_consensus_coverage": 0.25,
+      "crop_read_rate": 0.12,
+      "numbers_read": {
+        "15": 3,
+        "14": 2,
+        "6": 2,
+        "5": 1,
+        "22": 1,
+        "31": 1,
+        "12": 1,
+        "7": 1
+      }
+    },
+    "band_noprep": {
+      "config": {
+        "max_crops": 40,
+        "band": [
+          0.1,
+          0.52
+        ],
+        "upscale": 4,
+        "preprocess": false,
+        "stride_sample": true,
+        "min_conf": 0.4,
+        "min_votes": 2
+      },
+      "n_tracks": 40,
+      "track_coverage": 0.7,
+      "hi_consensus_coverage": 0.375,
+      "crop_read_rate": 0.143,
+      "numbers_read": {
+        "15": 5,
+        "5": 3,
+        "6": 3,
+        "22": 2,
+        "0": 2,
+        "1": 2,
+        "14": 2,
+        "13": 2,
+        "2": 1,
+        "31": 1,
+        "32": 1,
+        "12": 1,
+        "4": 1,
+        "10": 1,
+        "7": 1
+      }
+    }
+  }
+}
