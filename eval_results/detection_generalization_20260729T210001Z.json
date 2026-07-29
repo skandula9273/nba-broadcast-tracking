@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-07-29T21:00:01.381589+00:00",
+  "increment": "detection-generalization",
+  "stage": "per-game detection mAP breakdown on basketball-val (cross-game generalization signal)",
+  "dataset": {
+    "name": "SportsMOT basketball-val (YOLO labels, class 'athlete')",
+    "n_games": 4,
+    "n_val_images": 2516
+  },
+  "per_game": {
+    "v_00HRwkvvjtQ": {
+      "n_images": 1069,
+      "mAP50": 0.988,
+      "mAP50_95": 0.8034,
+      "precision": 0.9722,
+      "recall": 0.9625
+    },
+    "v_4r8QL_wglzQ": {
+      "n_images": 178,
+      "mAP50": 0.9913,
+      "mAP50_95": 0.8319,
+      "precision": 0.9774,
+      "recall": 0.9757
+    },
+    "v_5ekaksddqrc": {
+      "n_images": 845,
+      "mAP50": 0.9907,
+      "mAP50_95": 0.7985,
+      "precision": 0.9787,
+      "recall": 0.9643
+    },
+    "v_BgwzTUxJaeU": {
+      "n_images": 424,
+      "mAP50": 0.9696,
+      "mAP50_95": 0.7493,
+      "precision": 0.9557,
+      "recall": 0.9287
+    }
+  },
+  "spread_mAP50": {
+    "min": 0.9696,
+    "max": 0.9913,
+    "mean": 0.9849,
+    "std": 0.0089
+  },
+  "model": {
+    "weights": "weights/finetuned/best.pt",
+    "classes": {
+      "0": "athlete"
+    },
+    "ball_detected": false,
+    "imgsz_val": 640
+  },
+  "notes": "Per-game spread on the SELECTION split (val), so still mildly optimistic \u2014 but a LOW spread across 4 distinct games (arenas/teams/broadcast styles) is evidence the detector generalizes across games, not memorizes one. A truly held-out cross-DATASET number needs SportsMOT test (Codalab) or a box-annotated arena set (DeepSportradar is world-coord). Retrieval cross-game generalization IS measured elsewhere (semantic_validate held-out-game 0.942; broadcast_encoder held-out-game).",
+  "provenance": {
+    "device": "mps",
+    "versions": {
+      "ultralytics": "8.4.104",
+      "torch": "2.13.0",
+      "numpy": "2.4.6"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}

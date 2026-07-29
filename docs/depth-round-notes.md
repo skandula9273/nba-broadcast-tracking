@@ -592,6 +592,23 @@ auto-registers a frame -> `court_xy`.
   Stated as such. `make retrieve-semantic-validate`; +2 SupCon tests. The path forward for the real product:
   real play-type labels (or richer proxies) + this supervised objective.
 
+### Detection generalization — per-game mAP is uniform (0.97–0.99), so 0.987 isn't one easy game (2026-07-29)
+- **The gap #6:** everything is small-data/single-domain, and the 0.987 detection mAP is model-*selected* on
+  basketball-val — could be overfit to these specific games. A truly held-out cross-DATASET number isn't
+  cleanly available here (SportsMOT test GT is behind Codalab; DeepSportradar annotates players in world
+  coordinates + a full camera model, not image boxes — projecting them is error-prone, and a wrong number is
+  worse than none, so I did NOT fake one).
+- **What IS cleanly computable:** the per-GAME spread. `eval_generalization.py` (`make detect-generalization`)
+  runs `YOLO.val()` per game (symlinked per-game dirs — the txt-list mode silently loaded no labels, a bug I
+  caught because mAP came back exactly 0.0; and relative symlink targets resolve against the link location, not
+  cwd — both fixed). The 4 val games are distinct arenas/teams/broadcast styles.
+- **Result: mAP50 0.970 / 0.988 / 0.991 / 0.991 — mean 0.985, std 0.009.** Uniformly high, so the headline is
+  NOT carried by one easy game; the detector generalizes across games. Honest limit: still the selection split,
+  so mildly optimistic; cross-dataset is the remaining rigorous gap (stated). Retrieval cross-game
+  generalization is measured elsewhere (semantic_validate held-out-game 0.942; broadcast_encoder held-out-game).
+- **The lesson:** a metric that comes back *exactly* 0.0 is almost always a plumbing bug, not a real result —
+  I trusted that instinct rather than reporting a broken number.
+
 ### Jersey-OCR ACCURACY — resolution isn't the bottleneck; pose/blur/occlusion is (2026-07-29)
 - **The gap #5:** coverage says how often a track gets *a* number, never whether it's *right* (no jersey
   labels). The study leaned on coverage as a lower bound on identity; accuracy was unmeasured.

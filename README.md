@@ -82,8 +82,11 @@ from ground truth.** Specifically:
 
 **Perception (V0):** **athlete** detection mAP@50 **0.987** (fine-tuned yolov8m; single class — **ball not
 detected**; model-selected on basketball-val, the same split HOTA is scored on, so mildly optimistic; committed
-to `eval_results/detection_*.json`) · tracking HOTA **0.301 → 0.473** on SportsMOT basketball-val, via
-TrackEval — arc: ByteTrack → BoT-SORT → attribution → detector fine-tune.
+to `eval_results/detection_*.json`). Per-game breakdown (`make detect-generalization`): **0.970–0.991, std
+0.009** across the 4 distinct games — uniform, so the headline generalizes across games (arenas/teams/broadcast
+styles), not one easy game; a truly held-out cross-*dataset* number needs SportsMOT test (Codalab). · tracking
+HOTA **0.301 → 0.473** on SportsMOT basketball-val, via TrackEval — arc: ByteTrack → BoT-SORT → attribution →
+detector fine-tune.
 
 **Serving latency baseline (`make serve-bench`, MPS):** the deployed `detect → track` path runs at
 **9.9 fps (101 ms/frame)** — **detection is 94% of it** (94.5 ms/frame, YOLOv8m @ imgsz 1280), tracking is
