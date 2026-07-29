@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-07-29T18:13:18.894380+00:00",
+  "increment": "serving-latency-baseline",
+  "stage": "serving latency baseline (detect -> track, the deployed serve path)",
+  "config": {
+    "detector": "yolo",
+    "weights": "yolov8m.pt (COCO)",
+    "device": "mps",
+    "batch": 16,
+    "imgsz": 1280,
+    "tracker": "bytetrack"
+  },
+  "sequence": {
+    "name": "v_00HRwkvvjtQ_c007",
+    "n_frames": 200,
+    "width": 1280,
+    "height": 720,
+    "warmup_frames": 8
+  },
+  "stages": {
+    "detect": {
+      "total_s": 18.89,
+      "ms_per_frame": 94.45,
+      "fps": 10.59,
+      "n_dets": 5759
+    },
+    "track": {
+      "total_s": 1.29,
+      "ms_per_frame": 6.45,
+      "fps": 155.07
+    }
+  },
+  "end_to_end": {
+    "total_s": 20.18,
+    "ms_per_frame": 100.9,
+    "fps": 9.91,
+    "n_tracks": 3333
+  },
+  "provenance": {
+    "versions": {
+      "torch": "2.13.0",
+      "ultralytics": "8.4.104",
+      "boxmot": "22.0.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "Stage-level throughput (detector batches -> no per-frame percentiles). Warmup pass excludes model load / first-call MPS compile. Homography/re-ID off (deployed default); jersey-OCR re-ID is the known bottleneck (easyocr, minutes/clip) measured separately. Encode/FAISS is sub-ms, not the cost."
+}

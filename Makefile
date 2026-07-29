@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-semantic homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch test fmt lint
+.PHONY: help install lock data detect detect-eval track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-semantic homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -25,6 +25,9 @@ track:  ## run tracking -> tracker outputs (MOT format for TrackEval)
 
 eval:  ## run the eval harness -> timestamped JSON in eval_results/
 	python -m hooptrack.eval.run --config configs/v0.yaml
+
+serve-bench:  ## serving latency baseline for detect->track (ms/frame, fps) -> eval_results/serving_latency_*.json
+	python -m hooptrack.serve.bench
 
 serve:  ## launch the FastAPI service (/health; POST /track runs the shared detect->track pipeline, image-coord tracks)
 	uvicorn hooptrack.serve.app:app --reload

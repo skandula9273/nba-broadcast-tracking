@@ -75,6 +75,12 @@ detected**; model-selected on basketball-val, the same split HOTA is scored on, 
 to `eval_results/detection_*.json`) · tracking HOTA **0.301 → 0.473** on SportsMOT basketball-val, via
 TrackEval — arc: ByteTrack → BoT-SORT → attribution → detector fine-tune.
 
+**Serving latency baseline (`make serve-bench`, MPS):** the deployed `detect → track` path runs at
+**9.9 fps (101 ms/frame)** — **detection is 94% of it** (94.5 ms/frame, YOLOv8m @ imgsz 1280), tracking is
+~free (6.5 ms/frame, 155 fps). Below the 30 fps real-time bar (~33 ms/frame), so the V2 Pareto lever is the
+detector (imgsz / smaller model / quantization, trading mAP for fps); jersey-OCR re-ID is a separate, far
+heavier stage (easyocr, minutes/clip).
+
 The embedding core produced two headline findings — both about limits, both measured:
 
 **(a) The learned encoder is _more fragile_ than a zero-parameter baseline under association error.** In the

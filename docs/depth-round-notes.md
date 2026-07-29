@@ -559,6 +559,20 @@ auto-registers a frame -> `court_xy`.
   misleading number; the FAISS index is the real one the committed evals use; the sanity check (GT self-retrieval
   = 1.0) confirms the windows are distinguishable, so 0.80 is reconstruction cost, not window ambiguity.
 
+### Serving latency baseline — the missing operating point for the V2 Pareto (2026-07-29)
+- **Why:** "serving optimization + Pareto frontier" is the headline V2 item, but there was no *before* number —
+  you can't build a Pareto without a baseline on the real hardware. `serve/bench.py` (`make serve-bench`) times
+  the deployed `detect → track` path on real frames, after a warmup pass (so model-load / first-call MPS
+  compile don't pollute steady state).
+- **Result (MPS, 200 frames, yolov8m @ imgsz 1280):** end-to-end **9.9 fps (101 ms/frame)** — **detection is
+  94% of it** (94.5 ms/frame), tracking is ~free (6.5 ms/frame, 155 fps). Below the 30 fps real-time bar
+  (~33 ms/frame), so the concrete lever is the *detector* (imgsz ↓, smaller model, quantization — each trades
+  mAP for fps), not the tracker. The jersey-OCR re-ID stage is a separate, far heavier cost (easyocr,
+  minutes/clip; measured in the jersey runs).
+- **Honesty:** stage-level throughput, not per-frame percentiles (the detector batches internally); encode/FAISS
+  is sub-ms and not the serving cost. This is a baseline to optimize against, stated as such — the number is
+  config-bound (imgsz 1280 is deliberately large for accuracy), which is exactly the knob V2 would sweep.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
