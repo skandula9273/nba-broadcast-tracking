@@ -62,8 +62,8 @@ retrieve-semantic-validate:  ## VALIDATE semantic retrieval — supervised (SupC
 retrieve-nl:  ## NL play query demo — text -> semantic constraints -> matching possessions (structured, no LLM)
 	python -m hooptrack.retrieve.nl_query
 
-setarch-capacity:  ## capacity-matched set-arch d64 vs d128 crop recall (GPU-ready; CPU/MPS slow) -> setarch_capacity_*.json
-	python -m hooptrack.retrieve.setarch_capacity --epochs 60
+setarch-capacity:  ## capacity-matched set-arch d64 vs d128 crop recall. GPU: DEVICE=cuda EPOCHS=150 make setarch-capacity
+	python -m hooptrack.retrieve.setarch_capacity --epochs $(or $(EPOCHS),60) --device $(or $(DEVICE),cpu)
 
 retrieve-semantic:  ## semantic transfer probe — precision@5 by coarse play-type bucket (floor/trained/random)
 	python -m hooptrack.retrieve.semantic_probe --config configs/semantic_probe.yaml

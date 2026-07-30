@@ -49,12 +49,14 @@ def _train_and_eval(corpus, tr, va, d_model: int, args) -> dict:
         arch="set_transformer", dim=128, d_model=d_model, n_heads=4, n_layers=2, ff_dim=2 * d_model,
         dropout=0.1, temperature=0.1, epochs=args.epochs, batch=args.batch, lr=1e-3, weight_decay=1e-4,
         eval_every=0, jitter_sigma=0.01, p_mirror=0.5, p_crop=0.5, p_permute=0.0, n_permute=10,
-        p_swap=0.0, n_swaps=2, T=48, device="cpu", seed=args.seed,
+        p_swap=0.0, n_swaps=2, T=48, device=args.device, seed=args.seed,
     )
     torch.manual_seed(a.seed)
+    if a.device == "cuda" and torch.cuda.is_available():
+        torch.cuda.manual_seed_all(a.seed)
     cfg = EmbeddingConfig(enabled=True, arch=a.arch, dim=a.dim, d_model=a.d_model, n_heads=a.n_heads,
                           n_layers=a.n_layers, ff_dim=a.ff_dim, dropout=a.dropout, temperature=a.temperature)
-    emb = PlayEmbedder(cfg, device="cpu", T=a.T)
+    emb = PlayEmbedder(cfg, device=a.device, T=a.T)
     emb.build()
     t0 = time.time()
     train_encoder(emb, corpus[tr].astype(np.float32), a, np.random.default_rng(a.seed + 1))
@@ -78,7 +80,7 @@ def run(args) -> dict:
         "stage": "capacity-matched set-arch d64 vs d128 — does more width buy back temporal-crop recall?",
         "dataset": {"source": "linouk23 SportVU 2015-16", "split": "by game", "n_val": int(len(va)),
                     "val_games": val_games},
-        "config": {"arch": "set_transformer", "epochs": args.epochs, "batch": args.batch, "device": "cpu",
+        "config": {"arch": "set_transformer", "epochs": args.epochs, "batch": args.batch, "device": args.device,
                    "note": "only d_model (and ff_dim=2*d) differs between the two"},
         "results": results,
         "crop_delta_d64_to_d128": round(d128c - d64c, 4),
@@ -99,6 +101,8 @@ def main() -> None:
     ap.add_argument("--corpus", default="data/sportvu/corpus_g12_T48.npz")
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--batch", type=int, default=256)
+    ap.add_argument("--device", default="cpu", help="cpu | cuda | mps — use cuda on a GPU box for the fast, "
+                    "definitive 150-epoch run (CPU here is ~3h; MPS hangs the set-arch)")
     ap.add_argument("--seed", type=int, default=13)
     ap.add_argument("--val-stride", type=int, default=3)
     ap.add_argument("--val-offset", type=int, default=2)
