@@ -1,8 +1,16 @@
-"""Retrieval-uncertainty calibration + selective-prediction logic — pure numpy, CI-safe."""
+"""Retrieval-uncertainty calibration + selective-prediction logic — pure numpy, but the module pulls torch
+(checkpoint loader) at import, so it's skipped on the torch-less CI gate."""
 
 import numpy as np
+import pytest
 
-from hooptrack.retrieve.uncertainty import _calibration, _retrieve_with_confidence, _selective
+pytest.importorskip("torch")  # uncertainty.py -> checkpoint.py imports torch; skip if absent (CI [dev] gate)
+
+from hooptrack.retrieve.uncertainty import (  # noqa: E402
+    _calibration,
+    _retrieve_with_confidence,
+    _selective,
+)
 
 
 def test_retrieve_with_confidence_correct_and_margin():

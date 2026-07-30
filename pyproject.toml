@@ -57,6 +57,14 @@ dev = [
   "pytest>=8.0",
   "ruff>=0.4",
 ]
+# Minimal deps for the full test suite to run (the CI 'eval-as-ci' gate installs .[dev,test]). torch is needed
+# because retrieve/ modules import it at load; fastapi/httpx for the serve tests. NOT the full [cv] stack
+# (ultralytics/boxmot/easyocr are lazy-imported and not exercised by unit tests) — keeps CI fast.
+test = [
+  "torch>=2.2",
+  "fastapi>=0.110",
+  "httpx>=0.27",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/hooptrack"]

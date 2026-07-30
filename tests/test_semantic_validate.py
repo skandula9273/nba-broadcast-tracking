@@ -1,8 +1,12 @@
-"""SupCon loss for the semantic-retrieval validation — torch, tiny tensors, CI-safe."""
+"""SupCon loss for the semantic-retrieval validation — torch, tiny tensors; skipped on the torch-less CI gate."""
 
-import torch
+import pytest
 
-from hooptrack.retrieve.semantic_validate import supcon_loss
+pytest.importorskip("torch")  # torch is in the [cv] extra, not the CI [dev] gate — skip if absent
+
+import torch  # noqa: E402
+
+from hooptrack.retrieve.semantic_validate import supcon_loss  # noqa: E402
 
 
 def _norm(x):

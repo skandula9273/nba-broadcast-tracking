@@ -13,8 +13,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install (core + dev)
-        run: pip install -e ".[dev]"
+      - name: Install (core + dev + test deps)
+        run: pip install -e ".[dev,test]"   # torch/fastapi so the full suite runs (not the heavy [cv] stack)
+      - name: Lint
+        run: ruff check src tests
       - name: Tests
         run: pytest -q
       # As stages land, add the cheap retrieval eval here so every PR reports recall@k deltas

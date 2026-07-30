@@ -42,6 +42,8 @@ def test_keeps_only_n_players_most_present():
 
 
 def test_game_split_groups_clips_by_game():
+    import pytest
+    pytest.importorskip("torch")  # broadcast_encoder imports torch at module load; skip on the CI [dev] gate
     from hooptrack.retrieve.broadcast_encoder import _game
     assert _game("v_00HRwkvvjtQ_c007") == "v_00HRwkvvjtQ"
     assert _game("v_5ekaksddqrc_c003") == "v_5ekaksddqrc"      # trailing 'rc' not confused with the _c split
