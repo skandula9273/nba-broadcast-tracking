@@ -89,7 +89,9 @@ from ground truth.** Specifically:
   is either a **video clip** (decoded to frames by `ingest.extract_frames`, OpenCV) or a prepared MOT sequence,
   and runs the **same `Pipeline` the eval calls** (detect → track), returning **image-coordinate** tracks.
   `court_xy`/`player_id` are null (homography/re-ID off), so these are 2D image boxes, not top-down "moving
-  dots". `/health` is a liveness check. No `demo`.
+  dots". The default detector is now the **Pareto-optimal `configs/v0_finetuned_640.yaml`** (fine-tuned athlete
+  @ imgsz 640; falls back to weights-free COCO if the local fine-tuned weights are absent, `HOOPTRACK_CONFIG` to
+  override). `/health` is a liveness check. No `demo`.
 
 ## Results so far (measured, committed to `eval_results/`)
 
