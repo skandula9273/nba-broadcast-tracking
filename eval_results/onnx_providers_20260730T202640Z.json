@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-07-30T20:26:40.442437+00:00",
+  "increment": "v2-onnx-provider-comparison",
+  "stage": "raw forward-pass latency by execution provider (torch-MPS vs onnxruntime CPU vs CoreML EP)",
+  "detector": {
+    "weights": "weights/finetuned/best.pt",
+    "onnx": "weights/finetuned/best.onnx",
+    "imgsz": 640
+  },
+  "bench": {
+    "iters": 100,
+    "warmup": 20,
+    "input": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "note": "RAW forward pass only (no pre/post-processing) -> isolates the runtime/provider; NOT comparable to export_bench's full-predict ms (which includes NMS/postproc)"
+  },
+  "results": {
+    "torch_mps": {
+      "ms_per_forward": 43.779,
+      "device": "mps",
+      "speedup_vs_torch_mps": 1.0
+    },
+    "onnx_cpu": {
+      "ms_per_forward": 348.802,
+      "active_providers": [
+        "CPUExecutionProvider"
+      ],
+      "speedup_vs_torch_mps": 0.13
+    },
+    "onnx_coreml": {
+      "ms_per_forward": 17.709,
+      "active_providers": [
+        "CoreMLExecutionProvider",
+        "CPUExecutionProvider"
+      ],
+      "speedup_vs_torch_mps": 2.47
+    }
+  },
+  "fastest": "onnx_coreml",
+  "verdict": "CoreML EP is fastest -> the format-bench negative is overturned for the forward pass",
+  "provenance": {
+    "versions": {
+      "onnxruntime": "1.28.0",
+      "coremltools": "9.0",
+      "torch": "2.13.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}

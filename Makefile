@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto detect-export-bench track eval serve serve-bench retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl retrieve-uncertainty demo setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto detect-export-bench onnx-providers track eval serve serve-bench retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl retrieve-uncertainty demo setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -28,6 +28,9 @@ detect-pareto:  ## detector accuracy-latency Pareto over inference imgsz (V2 ser
 
 detect-export-bench:  ## V2 inference-format opt: PyTorch vs ONNX vs CoreML latency/mAP -> inference_format_*.json
 	python -m hooptrack.detect.export_bench
+
+onnx-providers:  ## V2 provider bench: torch-MPS vs onnxruntime CPU vs CoreML EP (raw forward pass) -> onnx_providers_*.json
+	python -m hooptrack.detect.onnx_providers
 
 detect-eval:  ## detection mAP on the fine-tuned weights -> eval_results/detection_*.json (increment-04)
 	python -m hooptrack.detect.eval --config configs/v0_finetuned.yaml

@@ -694,11 +694,20 @@ auto-registers a frame -> `court_xy`.
   onnxruntime here defaults to the **CPU** provider and the ultralytics CoreML path carries per-call overhead —
   so the naive export is a *loss*, not a win, on Apple/MPS. TensorRT is **NVIDIA-only** and not available in
   this environment (flagged, not faked).
-- **The honest takeaway:** for this deployment, the format knob doesn't help — the **resolution/model-size**
-  Pareto knobs (imgsz 640 dominating 1280; yolov8n on the frontier) are where the serving wins actually are.
-  A negative result reported as-is, like broadcast homography. (Engineering note: I burned three iterations on
-  this module — a `PosixPath.endswith` crash, a double-`pop` KeyError, and a too-brittle per-frame box-equivalence
-  metric that falsely flagged the lossless exports; reverted to full-mAP-per-format, the authoritative check.)
+- **The honest takeaway (initial):** via ultralytics' full-predict path, the format knob doesn't help — but that
+  ran onnxruntime on its **default CPU provider**, which isn't a fair test on Apple hardware. (Engineering note:
+  I burned three iterations on this module — a `PosixPath.endswith` crash, a double-`pop` KeyError, and a
+  too-brittle per-frame box-equivalence metric that falsely flagged the lossless exports; reverted to
+  full-mAP-per-format, the authoritative check.)
+- **Follow-up that OVERTURNS the negative — the CoreML execution provider (`detect/onnx_providers.py`,
+  `make onnx-providers`).** Isolating the runtime on the **raw forward pass** (identical fixed input, no
+  pre/post-processing) through three providers: torch-MPS **43.8 ms**, onnxruntime-CPU **348.8 ms (0.13×)**,
+  onnxruntime-**CoreML EP 17.7 ms (2.47× faster than MPS PyTorch)**. So the ONNX export routed through Apple's
+  **Neural Engine / GPU (CoreML EP)** is a **real 2.5× inference win** — the format bench's "exports are slower"
+  was an artifact of onnxruntime's default CPU provider, not the export. Honest caveat: this is forward-pass
+  only; the full predict adds NMS/postprocessing (CPU) that dilutes the win end-to-end, so the practical gain is
+  smaller than 2.5× and matters most under batching/scale. Lesson: a negative result deserves the fair
+  follow-up before it's believed — the default provider was doing the damage, not the format.
 
 ### V2 end-to-end uncertainty — the retrieval confidence signal is CALIBRATED → selective prediction works (2026-07-30)
 - **The upside:** a retrieval system is only production-useful if it can say "I'm not sure." So: is a cheap,

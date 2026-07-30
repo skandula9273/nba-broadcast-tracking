@@ -121,10 +121,12 @@ tracking quality all along. The serving win is a config change, not a new model.
 fine-tuned **yolov8n** (same recipe, one variable = backbone) lands **on the frontier**: **0.973 mAP @ 44.7 fps,
 3.0M params (6 MB)** — the fastest/smallest point, only −1.4 mAP vs yolov8m@640, so a nano model nearly matches
 the medium on this single-class task. The measured deployment menu: **yolov8m@640** for peak accuracy,
-**yolov8n@640** for edge/real-time. **Inference-format** axis (`make detect-export-bench`) is an honest
-negative: PyTorch/MPS is **fastest** (58 ms/frame); the naive ONNX (CPU) and CoreML exports are **5.9× / 2.1×
-slower** on this Apple hardware (mAP 0.987 preserved) — so the resolution/model-size knobs, not export format,
-are where the serving wins are (TensorRT is NVIDIA-only, not measured here).
+**yolov8n@640** for edge/real-time. **Inference-format** axis: the naive ONNX/CoreML
+exports via ultralytics looked *slower* (`make detect-export-bench`) — but only because onnxruntime ran on its
+default **CPU** provider. The fair on-device follow-up (`make onnx-providers`) **overturns that**: on the raw
+forward pass, onnxruntime through the **CoreML execution provider** (Apple Neural Engine) is **17.7 ms — 2.5×
+faster than MPS PyTorch** (43.8 ms), vs onnx-CPU 349 ms. So there *is* a real inference win on Apple hardware —
+the ONNX model on the ANE — with mAP 0.987 preserved (TensorRT is NVIDIA-only, not measured here).
 
 The embedding core produced three headline findings — all measured:
 
