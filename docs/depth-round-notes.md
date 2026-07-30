@@ -784,6 +784,36 @@ auto-registers a frame -> `court_xy`.
   ~1 point. So the deployment menu is now measured: **yolov8m@640** for peak accuracy, **yolov8n@640** for
   edge/real-time. Committed `detector_pareto_*.json` (the two-model run) + the yolov8n meta.
 
+### One demonstrated end-to-end clip (inc-10) — the path RUNS, the neighbours are garbage, and that's the result (2026-07-30)
+- **What:** wire and *run* a single clip through the whole path — broadcast frames → detect → track → court
+  coords → possession tensor → embedding → retrieval — with **every crutch explicit** (`retrieve/from_tracks.py`,
+  `docs/increment-10-end-to-end.md`). Scoped hard: one clip, no homography front-end, no re-ID, no generalization.
+- **The crutches, named:** court coords from a **hand-clicked** 4-point homography (held-out reprojection **~30
+  ft** off — its own 4 fit points are 0 by tautology, which I caught and added check points to expose); re-ID
+  **substituted** by ordering tracks (length, then first-frame x) into arbitrary slots — *exactly* the order
+  corruption the degradation study models; ball zeroed; SportVU (NBA) gallery for an NCAA query clip.
+- **Result: the path runs, the top-5 are NOT meaningful** — cosines 0.64–0.78 (the encoder's generic band),
+  unrelated events. This is the **degradation study's prediction made empirical**: a ~30-ft homography +
+  arbitrary player slots + no ball → arbitrary neighbours. A clean-looking top-5 here would have been *less*
+  honest. The most important entry in the whole log: the system doesn't pretend to work off broadcast, and the
+  reason is the exact one the study localized (association / player identity), now shown end-to-end.
+
+### V1 + V2-upside complete — the honest demo and the single-doc writeup (2026-07-30)
+- **Demo (`make demo`, `hooptrack/demo.py`):** a reproducible five-minute walkthrough that runs the product
+  *where it works* — NL query → real matching plays over SportVU GT, then similar-play retrieval with the
+  **calibrated confidence** (shows a HIGH 0.90 and a LOW 0.64 "would abstain", the uncertainty result made
+  tangible) — then **names the broadcast gap** (inc-10) rather than faking the broadcast demo that doesn't work.
+  Composes committed pieces; no new numbers. This is the honest-demo principle: show it on the data it works on,
+  state the limit.
+- **Writeup (`docs/writeup.md`):** the single document a reviewer reads first — the three findings (association
+  is the reconstruction cost; order-invariance ⟂ crop; semantic retrieval needs a semantic objective), the
+  numbers table, and the real/simulated/gated map. Consolidates this decision log + the increment docs.
+- **Where it lands:** V1 (the deliverable) and the V2 upside are both done and measured. Everything genuinely
+  remaining is **resource-gated, not buildable here** and flagged as such: the definitive d128 set-arch (CUDA),
+  broadcast court GT (homography transfer), and jersey-accuracy + play-type labels (the semantic product). The
+  discipline — beat a simpler baseline, attribute every win, report the negatives as loudly as the wins — is the
+  deliverable, not any single number.
+
 ### Serving latency baseline — the missing operating point for the V2 Pareto (2026-07-29)
 - **Why:** "serving optimization + Pareto frontier" is the headline V2 item, but there was no *before* number —
   you can't build a Pareto without a baseline on the real hardware. `serve/bench.py` (`make serve-bench`) times
