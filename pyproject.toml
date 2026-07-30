@@ -76,3 +76,8 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+
+[tool.ruff.lint]
+# Pin the rule set explicitly (= ruff's documented default) so lint is deterministic across ruff versions —
+# CI installs the latest ruff, whose changing default rules otherwise flag things a local older ruff doesn't.
+select = ["E4", "E7", "E9", "F"]
