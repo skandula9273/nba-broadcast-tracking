@@ -126,7 +126,6 @@ def main() -> None:
     from ..pipeline import Pipeline
     from ..track.tracker import build_tracker
     from .checkpoint import load_checkpoint
-    from .train import _faiss_rankings  # noqa: F401  (kept for parity; brute-force below is clearer for top-5)
 
     H, fx = load_homography(args.fixture)
     reproj = reprojection_error_ft(H, fx)
