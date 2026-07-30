@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval detect-generalization track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-semantic retrieve-semantic-validate retrieve-nl homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval detect-generalization track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-semantic retrieve-semantic-validate retrieve-nl setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -61,6 +61,9 @@ retrieve-semantic-validate:  ## VALIDATE semantic retrieval — supervised (SupC
 
 retrieve-nl:  ## NL play query demo — text -> semantic constraints -> matching possessions (structured, no LLM)
 	python -m hooptrack.retrieve.nl_query
+
+setarch-capacity:  ## capacity-matched set-arch d64 vs d128 crop recall (GPU-ready; CPU/MPS slow) -> setarch_capacity_*.json
+	python -m hooptrack.retrieve.setarch_capacity --epochs 60
 
 retrieve-semantic:  ## semantic transfer probe — precision@5 by coarse play-type bucket (floor/trained/random)
 	python -m hooptrack.retrieve.semantic_probe --config configs/semantic_probe.yaml

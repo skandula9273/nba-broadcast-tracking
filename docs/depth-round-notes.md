@@ -592,6 +592,26 @@ auto-registers a frame -> `court_xy`.
   Stated as such. `make retrieve-semantic-validate`; +2 SupCon tests. The path forward for the real product:
   real play-type labels (or richer proxies) + this supervised objective.
 
+### Capacity-matched set-arch (d64 vs d128) — GPU-blocked, characterized honestly; memory claim corrected (2026-07-29)
+- **The caveat #8:** inc-09 measured the set-transformer's crop recall at d64 (0.487) vs the d128 baseline and
+  flagged a capacity confound, because MPS OOM'd the set-arch at d128/batch512. The question: does more width
+  buy back temporal-crop recall, or is the order-invariance ⟂ crop cost intrinsic?
+- **What I found trying to run it (all honest, negative-ish):**
+  - **Memory claim CORRECTED:** the d128 set-arch does NOT OOM at batch<=256 on MPS (a 1-epoch probe and the
+    2-epoch CPU smoke both ran) — the original "OOM at d128" was really "OOM at batch512". Memory isn't the wall.
+  - **But it's not practically trainable here:** MPS *hangs* at batch256 (a run printed epoch 0 then stalled
+    50+ min), *crawls* at batch128 (~10s/epoch), and CPU is ~63s/epoch (d64) / ~119s/epoch (d128) — a full
+    epoch-matched 60ep comparison is ~3 hours. So a definitive number genuinely needs a **CUDA GPU** (exactly
+    the original critique's "needs a real GPU").
+  - **Weak equal-epoch signal (not conclusive):** at 2 identical (minimal) epochs, crop is d64 0.140 vs d128
+    0.150 — nearly equal despite d128 having 3.8x the params (150,912 -> 580,224). Suggestive that width isn't
+    obviously changing crop, but 2 epochs is far too undertrained to conclude.
+- **What I shipped instead of a fake number:** `setarch_capacity.py` (`make setarch-capacity`) — a reproducible,
+  epoch-matched d64-vs-d128 harness (CPU-safe, skips the FAISS-verify false alarm) that produces the definitive
+  crop comparison **on a GPU in minutes**. Committed the harness + this characterization; did NOT commit an
+  eval JSON, because there is no valid measurement to report from this hardware. The integrity call: report the
+  blocker precisely (and correct the memory misconception) rather than dress up an undertrained run as a result.
+
 ### NL play query — a structured layer over the VALIDATED semantic axes, not a fake LLM (2026-07-29)
 - **The gap #9:** NL query was greenfield, and the honest objection was that an NL query over an embedding with
   no semantics is a demo, not a feature. That objection is now answered upstream (semantic_validate: the
