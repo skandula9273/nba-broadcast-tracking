@@ -1,0 +1,54 @@
+==============================================================================
+hooptrack demo — play retrieval on SportVU ground-truth tracks (the working product)
+corpus: 2612 possessions | encoder: trajectory_transformer (checkpoint git d373a02d)
+==============================================================================
+
+[1] Natural-language play query  (text -> semantic constraints -> matching possessions)
+
+  "transition plays"
+      constraints={'transition': 'transition'}  matches=1284
+      -> 01.02.2016.HOU.at.SAS  event 240
+      -> 01.02.2016.DET.at.IND  event 362
+      -> 01.02.2016.HOU.at.SAS  event 51
+  "half court sets on the left"
+      constraints={'transition': 'halfcourt', 'initiation_side': 'left'}  matches=320
+      -> 01.02.2016.DEN.at.GSW  event 405
+      -> 01.02.2016.HOU.at.SAS  event 244
+      -> 01.02.2016.DET.at.IND  event 32
+  "isolation on the right"
+      constraints={'initiation_side': 'right', 'handler_change': 'handler_low'}  matches=251
+      -> 01.02.2016.DEN.at.GSW  event 567
+      -> 01.02.2016.DET.at.IND  event 523
+      -> 01.02.2016.NOP.at.DAL  event 276
+  "fast break with ball movement"
+      constraints={'transition': 'transition', 'handler_change': 'handler_high'}  matches=810
+      -> 01.01.2016.PHI.at.LAL  event 419
+      -> 01.02.2016.HOU.at.SAS  event 240
+      -> 01.02.2016.HOU.at.SAS  event 235
+
+[2] Similar-play retrieval with confidence  (trained encoder; top-1 cosine is calibrated,
+    corr 0.74 / ECE 0.06 -> selective prediction: answer the confident half -> ~1.0 accuracy)
+
+  query: 01.02.2016.NOP.at.DAL event 131  confidence=0.643 [LOW (would abstain)]
+      -> 01.02.2016.NOP.at.DAL  event 263
+      -> 01.02.2016.NOP.at.DAL  event 396
+      -> 01.02.2016.DET.at.IND  event 70
+  query: 01.02.2016.DET.at.IND event 143  confidence=0.779 [HIGH]
+      -> 01.02.2016.MEM.at.UTA  event 283
+      -> 01.02.2016.BKN.at.BOS  event 302
+      -> 01.02.2016.BKN.at.BOS  event 574
+  query: 01.02.2016.HOU.at.SAS event 31  confidence=0.903 [HIGH]
+      -> 01.02.2016.HOU.at.SAS  event 33
+      -> 01.02.2016.MEM.at.UTA  event 330
+      -> 01.01.2016.ORL.at.WAS  event 437
+
+[3] What does NOT work yet — broadcast reconstruction (honest, measured)
+    inc-10 ran ONE clip end-to-end (frames -> detect -> track -> court -> tensor -> retrieval).
+    The neighbours were NOT meaningful: a hand-clicked homography (~30 ft off) + arbitrary player
+    slots (no re-ID) + no ball = the degradation study's prediction made empirical. The retrieval
+    core is real (above); making it work FROM broadcast needs a homography front-end + re-ID +
+    ball tracking + a broadcast-domain encoder — each measured in its own increment, none faked.
+
+==============================================================================
+Run the pieces yourself: make retrieve-semantic-validate | retrieve-uncertainty | retrieve-oneclip
+==============================================================================
