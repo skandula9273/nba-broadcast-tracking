@@ -592,6 +592,30 @@ auto-registers a frame -> `court_xy`.
   Stated as such. `make retrieve-semantic-validate`; +2 SupCon tests. The path forward for the real product:
   real play-type labels (or richer proxies) + this supervised objective.
 
+### Encoder checkpointing — the retrieval and degradation artifacts now describe ONE model (2026-07-30)
+- **The gap (caught by review):** grep confirms no `torch.save`/`state_dict`/`load_state` anywhere in `src/` —
+  `train.py` and `study.py` each trained from scratch and *discarded* the model. So the committed retrieval
+  numbers and the committed degradation numbers described **two different model instances** of the same recipe,
+  linked only by a shared seed. Reproducible-by-luck, not by construction.
+- **The fix (mechanism, recipe untouched):** `checkpoint.py` — `save_checkpoint` writes `{state_dict, config,
+  arch, T, seed, corpus_fingerprint, git_sha, final_loss, val_metrics}` to `weights/retrieve/<arch>_<ts>.pt`
+  (gitignored, like the detector weights; provenance travels in the committed JSON). `load_checkpoint`
+  reconstructs the encoder from the **checkpoint's own config**, not `configs/*.yaml`, so a checkpoint stays
+  loadable after config drift. `train.py` saves one by default and records `{path, corpus_fingerprint,
+  git_sha}` in its JSON; `study.py --checkpoint <pt>` loads that exact encoder instead of retraining
+  (retrain-from-scratch stays the DEFAULT, so nothing silently changes), and records `encoder_source` in its
+  JSON. Test: save -> load -> encode is **bit-identical** (`np.array_equal`), and load rebuilds at the saved
+  dims regardless of the current config.
+- **Re-ran to make the two artifacts one model:** re-trained the inc-06b recipe (seed 13) WITH checkpointing
+  (`retrieval_trained_20260730T025617Z.json` + `trajectory_transformer_20260730T025617Z.pt`, git d373a02), then
+  ran the degradation study against that exact checkpoint (`degradation_ckpt_20260730T025854Z.json`,
+  `encoder_source=loaded_checkpoint`, val r@1 0.9806 == the retrieval artifact).
+- **Did the numbers shift? No — not materially.** Retrieval overall r@1 0.9810 -> **0.9806** (-0.0004);
+  degradation combined-realistic 0.677 -> **0.669** (-0.008, and *identical* to the current-code from-scratch
+  run); id_swap=4 0.435 -> 0.437. All within MPS run-to-run noise. The point wasn't a number change — it's that
+  the two artifacts are now provably **one model** (same checkpoint fingerprint), not two instances that merely
+  happened to match under a shared seed. Committed both new JSONs as the canonical checkpoint-tied pair.
+
 ### Capacity-matched set-arch (d64 vs d128) — GPU-blocked, characterized honestly; memory claim corrected (2026-07-29)
 - **The caveat #8:** inc-09 measured the set-transformer's crop recall at d64 (0.487) vs the d128 baseline and
   flagged a capacity confound, because MPS OOM'd the set-arch at d128/batch512. The question: does more width

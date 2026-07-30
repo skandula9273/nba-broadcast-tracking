@@ -30,6 +30,7 @@ import torch
 
 from ..config import EmbeddingConfig
 from ..eval.metrics import mean_recall_at_k, mean_reciprocal_rank
+from .checkpoint import corpus_fingerprint, git_sha, save_checkpoint
 from .embed import PlayEmbedder, info_nce_loss
 from .possessions import augment, augment_view, order_perturb
 from .run import AUGS, KS, _rankings, features
@@ -220,7 +221,22 @@ def run(args) -> dict:
 
     delta = {m: round(trained["overall"][m] - floor["overall"][m], 4) for m in METRIC_KEYS}
 
+    # Save the trained weights so THIS model can be reloaded (e.g. by study.py) instead of retrained from a
+    # different random init — the fix for retrieval and degradation describing two different model instances.
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    corpus_fp = corpus_fingerprint(corpus)
+    checkpoint = None
+    if not getattr(args, "no_checkpoint", False):
+        ckpt_path = Path("weights/retrieve") / f"{args.arch}_{stamp}.pt"
+        save_checkpoint(embedder, ckpt_path, seed=args.seed, corpus_fp=corpus_fp,
+                        final_loss=history[-1], val_metrics=trained["overall"],
+                        extra={"n_games": args.n_games, "T": args.T, "val_stride": args.val_stride,
+                               "val_offset": args.val_offset, "val_games": val_games})
+        checkpoint = {"path": str(ckpt_path), "corpus_fingerprint": corpus_fp, "git_sha": git_sha()}
+
     return {
+        "stamp": stamp,
+        "checkpoint": checkpoint,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "increment": "06b-embedding-core-trained",
         "stage": "retrieval — trained compact trajectory transformer (contrastive InfoNCE)",
@@ -309,15 +325,18 @@ def main() -> None:
     ap.add_argument("--n-permute", type=int, default=10)   # 10 = full player shuffle
     ap.add_argument("--p-swap", type=float, default=0.0)
     ap.add_argument("--n-swaps", type=int, default=2)
+    ap.add_argument("--no-checkpoint", action="store_true", help="skip saving weights/retrieve/<arch>_<ts>.pt")
     args = ap.parse_args()
 
     report = run(args)
     report["tag"] = args.tag or None
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stamp = report["stamp"]                          # share the timestamp with the saved checkpoint
     name = f"retrieval_trained_{args.tag + '_' if args.tag else ''}{stamp}.json"
     (out / name).write_text(json.dumps(report, indent=2))
+    if report.get("checkpoint"):
+        print(f"saved checkpoint: {report['checkpoint']['path']}  (git {str(report['checkpoint']['git_sha'])[:8]})")
 
     r = report["results"]
     f, t, d = r["floor_on_val"], r["trained_on_val"], r["delta_overall"]

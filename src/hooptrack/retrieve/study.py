@@ -44,11 +44,26 @@ ENCODERS = ("trained", "floor")
 
 
 def _prepare(args):
-    """Load the corpus, split by game, train the encoder on the train split (reuses train.py)."""
+    """Load the corpus + split by game, then EITHER load a saved encoder (`--checkpoint`) OR train from scratch
+    (default). Loading a checkpoint is how the degradation study describes the SAME model as the retrieval run
+    that saved it; retrain-from-scratch stays the default so existing behaviour is unchanged."""
     cache = Path(args.cache_dir) / f"corpus_g{args.n_games}_T{args.T}.npz"
     z = np.load(cache, allow_pickle=True)
     corpus, meta = z["corpus"].astype(np.float32), list(z["meta"])
     tr, va, train_games, val_games = split_by_game(meta, args.val_stride, args.val_offset)
+
+    if args.checkpoint:
+        from .checkpoint import load_checkpoint
+        emb, ckpt = load_checkpoint(args.checkpoint, args.device)
+        source = {"mode": "loaded_checkpoint", "path": args.checkpoint,
+                  "arch": ckpt.get("arch"), "seed": ckpt.get("seed"),
+                  "corpus_fingerprint": ckpt.get("corpus_fingerprint"), "git_sha": ckpt.get("git_sha"),
+                  "trained_val_metrics": ckpt.get("val_metrics")}
+        if (ckpt.get("val_stride"), ckpt.get("val_offset")) != (args.val_stride, args.val_offset):
+            source["WARNING_val_split_mismatch"] = (f"ckpt {ckpt.get('val_stride')}/{ckpt.get('val_offset')} "
+                                                    f"vs study {args.val_stride}/{args.val_offset}")
+        return emb, corpus[va], train_games, val_games, 0.0, source
+
     torch.manual_seed(args.seed)
     if args.device == "mps" and hasattr(torch, "mps"):
         torch.mps.manual_seed(args.seed)
@@ -59,7 +74,9 @@ def _prepare(args):
     emb = PlayEmbedder(cfg, device=args.device, T=args.T)
     emb.build()
     _, secs = train_encoder(emb, corpus[tr], args, np.random.default_rng(args.seed + 1))
-    return emb, corpus[va], train_games, val_games, secs
+    source = {"mode": "retrained_from_scratch", "seed": args.seed, "arch": args.arch,
+              "note": "default — a DIFFERENT random init than any retrieval checkpoint unless --checkpoint given"}
+    return emb, corpus[va], train_games, val_games, secs, source
 
 
 def _point(perturb, sev, val_corpus, encoders, galleries, seed_seq) -> dict:
@@ -70,7 +87,7 @@ def _point(perturb, sev, val_corpus, encoders, galleries, seed_seq) -> dict:
 
 
 def run(args) -> dict:
-    emb, val_corpus, train_games, val_games, secs = _prepare(args)
+    emb, val_corpus, train_games, val_games, secs, encoder_source = _prepare(args)
     n_val = len(val_corpus)
     encoders = {"trained": emb.encode_batch, "floor": features}
     galleries = {name: fn(val_corpus) for name, fn in encoders.items()}
@@ -108,6 +125,7 @@ def run(args) -> dict:
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "increment": "07-degradation-study",
         "stage": "reconstructed-vs-GT retrieval degradation (controlled)",
+        "encoder_source": encoder_source,
         "dataset": {
             "source": "linouk23 SportVU 2015-16", "n_games": args.n_games, "T": args.T,
             "split": "by game (held-out val)", "train_games": train_games, "val_games": val_games,
@@ -176,6 +194,8 @@ def main() -> None:
     ap.add_argument("--out-dir", default="eval_results")
     ap.add_argument("--device", default="mps")
     ap.add_argument("--seed", type=int, default=13)
+    ap.add_argument("--checkpoint", default=None, help="load a saved encoder (weights/retrieve/*.pt) instead of "
+                    "retraining — so this study describes the SAME model as the retrieval run that saved it")
     ap.add_argument("--val-stride", type=int, default=3)
     ap.add_argument("--val-offset", type=int, default=2)
     # realistic combined operating point (anchored to the measured budgets)
@@ -220,7 +240,9 @@ def main() -> None:
     (out / name).write_text(json.dumps(report, indent=2))
 
     r = report["results"]
-    print(f"\nWrote {name} | n_val={report['dataset']['n_val']}")
+    src = report["encoder_source"]
+    print(f"\nWrote {name} | n_val={report['dataset']['n_val']} | encoder: {src['mode']}"
+          + (f" ({src['path']})" if src.get("path") else ""))
     print(f"baseline (no degradation): trained r@1={r['baseline_no_degradation']['trained']['recall@1']} "
           f"floor r@1={r['baseline_no_degradation']['floor']['recall@1']}")
     for name, pts in r["sweeps"].items():
