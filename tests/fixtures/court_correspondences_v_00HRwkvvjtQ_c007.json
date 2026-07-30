@@ -1,0 +1,18 @@
+{
+  "sequence": "v_00HRwkvvjtQ_c007",
+  "frame": "000001.jpg",
+  "image_wh": [1280, 720],
+  "court_system": "NBA full court, feet; origin at left baseline; x in [0,94] (length), y in [0,50] (width); right-basket end",
+  "CRUTCH": "HAND-CLICKED, EYEBALLED correspondences on ONE frame of a MOVING broadcast camera. These are approximate (easily +/- tens of pixels and several feet), calibrated on frame 1 only, and the clip is an NCAA court (narrower 3pt/lane than the NBA SportVU the encoder was trained on). This is a manual crutch in place of a real homography front-end — NOT a measured registration.",
+  "correspondences": [
+    {"label": "right rim / basket center", "px": [715, 120], "court_ft": [88.75, 25.0]},
+    {"label": "free-throw line center (top of key)", "px": [575, 212], "court_ft": [75.0, 25.0]},
+    {"label": "right baseline x near sideline (bottom-right court corner)", "px": [905, 470], "court_ft": [94.0, 3.0]},
+    {"label": "right baseline x far sideline (upper-right court corner)", "px": [775, 92], "court_ft": [94.0, 47.0]}
+  ],
+  "check_points": [
+    {"label": "near lane corner at free-throw line (HELD OUT)", "px": [640, 300], "court_ft": [75.0, 17.0]},
+    {"label": "far lane corner at baseline (HELD OUT)", "px": [830, 180], "court_ft": [94.0, 33.0]}
+  ],
+  "reprojection_note": "4 correspondences fully determine an 8-DOF homography, so their reprojection error is 0 by construction (a tautology, NOT accuracy). check_points are HELD OUT of the fit; their reprojection error is the honest (still-noisy, still-eyeballed) accuracy estimate."
+}

@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-07-30T03:22:22.727689+00:00",
+  "increment": "10-end-to-end-one-clip",
+  "stage": "ONE clip: frames -> detect -> track -> court(H) -> (T,11,2) -> embed(checkpoint) -> retrieval",
+  "clip": {
+    "sequence": "v_00HRwkvvjtQ_c007",
+    "window_frames": [
+      1,
+      48
+    ],
+    "n_tracks_in_window": 10,
+    "n_frames_decoded": 60
+  },
+  "crutches": {
+    "homography": "HAND-CLICKED fixture (tests/fixtures/court_correspondences_v_00HRwkvvjtQ_c007.json); HELD-OUT reprojection error 30.52 ft (the 4 fit points reproject at 0 by construction \u2014 a tautology); single static H for a moving camera; NCAA court vs NBA-trained encoder",
+    "reid_substitute": "entity order = (track length desc, first-frame x asc); track IDs are NOT player identities -> arbitrary slots == the order corruption the degradation study models",
+    "ball": "entity 0 (ball) zeroed \u2014 athlete-only detector",
+    "gallery": "SportVU 2015-16 (different season/data) \u2014 cross-corpus retrieval"
+  },
+  "homography_reprojection_error_ft": 30.52,
+  "encoder": {
+    "checkpoint": "weights/retrieve/trajectory_transformer_20260730T025617Z.pt",
+    "arch": "trajectory_transformer",
+    "corpus_fingerprint": "d8d9b2b0557cceba",
+    "git_sha": "d373a02d216dae4e8d511042127b1e6979913749"
+  },
+  "retrieval_top5": [
+    {
+      "rank": 1,
+      "sim": 0.7754,
+      "idx": 1861,
+      "game": "01.02.2016.HOU.at.SAS",
+      "eventId": "244"
+    },
+    {
+      "rank": 2,
+      "sim": 0.7083,
+      "idx": 2412,
+      "game": "01.02.2016.MIL.at.MIN",
+      "eventId": "508"
+    },
+    {
+      "rank": 3,
+      "sim": 0.6785,
+      "idx": 478,
+      "game": "01.01.2016.NYK.at.CHI",
+      "eventId": "140"
+    },
+    {
+      "rank": 4,
+      "sim": 0.6576,
+      "idx": 442,
+      "game": "01.01.2016.NYK.at.CHI",
+      "eventId": "63"
+    },
+    {
+      "rank": 5,
+      "sim": 0.6365,
+      "idx": 1309,
+      "game": "01.02.2016.BKN.at.BOS",
+      "eventId": "580"
+    }
+  ],
+  "notes": "One clip, every crutch explicit. If the neighbours look unrelated, that is the EMPIRICAL version of the degradation study's prediction (approximate H + no re-ID + no ball corrupt the reconstruction), and is a more honest result than a clean number.",
+  "provenance": {
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}

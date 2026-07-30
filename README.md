@@ -76,6 +76,15 @@ from ground truth.** Specifically:
   broadcast tensors (held out **by game**) **beats the floor** on the unseen game — recall@1 0.857 → **0.881**,
   recall@10 0.857 → **0.952**, MRR 0.862 → **0.901** — even with tiny supervision (213 windows, 3 games). So the
   trained centerpiece can be made valid end-to-end; more broadcast data extends it.
+- **ONE fully-honest end-to-end clip — frames → detect → track → court → tensor → embed → retrieval**
+  (`retrieve/from_tracks.py`, inc-10). On clip `v_00HRwkvvjtQ_c007` (48-frame window, 10 tracks) the whole path
+  runs and returns a top-5 — but **the neighbours are not meaningful, by design-honest crutches**: the court
+  homography is a **hand-clicked** 4-point fixture (held-out reprojection **~30 ft** off — its own 4 points are
+  0 by tautology), re-ID is **substituted** by ordering tracks (length, then first-frame x) into arbitrary
+  slots (**exactly** the order-corruption the degradation study showed craters the encoder), and there's no
+  ball. Top-5 cosines sit in the encoder's generic 0.64–0.78 band with no relation to the query. This is the
+  degradation study's prediction made **empirical** — a crude reconstruction retrieves arbitrary neighbours —
+  and a more honest result than a clean number (`docs/increment-10-end-to-end.md`).
 - **serve — runs the shared detect → track pipeline, from a video clip or a MOT dir.** `POST /track`'s `source`
   is either a **video clip** (decoded to frames by `ingest.extract_frames`, OpenCV) or a prepared MOT sequence,
   and runs the **same `Pipeline` the eval calls** (detect → track), returning **image-coordinate** tracks.

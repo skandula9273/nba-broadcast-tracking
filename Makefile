@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval detect-generalization track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-semantic retrieve-semantic-validate retrieve-nl setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval detect-generalization track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -52,6 +52,9 @@ retrieve-end2end:  ## REAL tracker output -> tensor -> FAISS retrieval, reconstr
 
 retrieve-bcast-encoder:  ## in-domain broadcast encoder (image coords), recon-vs-GT on a held-out game -> broadcast_encoder_*.json
 	python -m hooptrack.retrieve.broadcast_encoder
+
+retrieve-oneclip:  ## ONE-clip end-to-end demo frames->...->retrieval (needs a checkpoint from retrieve-train) -> end2end_oneclip_*.json
+	python -m hooptrack.retrieve.from_tracks --checkpoint $$(ls -t weights/retrieve/*.pt | head -1)
 
 retrieve-study:  ## reconstructed-vs-GT degradation study (increment-07, the headline finding)
 	python -m hooptrack.retrieve.study --n-games 12 --epochs 300
