@@ -121,7 +121,10 @@ tracking quality all along. The serving win is a config change, not a new model.
 fine-tuned **yolov8n** (same recipe, one variable = backbone) lands **on the frontier**: **0.973 mAP @ 44.7 fps,
 3.0M params (6 MB)** — the fastest/smallest point, only −1.4 mAP vs yolov8m@640, so a nano model nearly matches
 the medium on this single-class task. The measured deployment menu: **yolov8m@640** for peak accuracy,
-**yolov8n@640** for edge/real-time.
+**yolov8n@640** for edge/real-time. **Inference-format** axis (`make detect-export-bench`) is an honest
+negative: PyTorch/MPS is **fastest** (58 ms/frame); the naive ONNX (CPU) and CoreML exports are **5.9× / 2.1×
+slower** on this Apple hardware (mAP 0.987 preserved) — so the resolution/model-size knobs, not export format,
+are where the serving wins are (TensorRT is NVIDIA-only, not measured here).
 
 The embedding core produced three headline findings — all measured:
 

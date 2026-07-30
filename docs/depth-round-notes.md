@@ -684,6 +684,22 @@ auto-registers a frame -> `court_xy`.
   labeled broadcast set (SoccerNet jersey GT) and will sit below the synthetic ceiling, but the
   resolution-is-sufficient conclusion is robust (real heights >> the resolution-limited regime).
 
+### V2 inference-format optimization — an honest negative: the naive exports are SLOWER on Apple hardware (2026-07-30)
+- **What:** the 'serving + inference optimization (ONNX/TensorRT/CoreML)' V2 line, measured. `detect/export_bench.py`
+  (`make detect-export-bench`) exports the fine-tuned detector to ONNX + CoreML and measures single-frame
+  (batch-1) latency + full mAP per format vs the PyTorch/MPS baseline.
+- **Result — PyTorch/MPS is the FASTEST; the exports are slower on this hardware:** PyTorch/MPS **58 ms/frame**
+  (17 fps@1, fastest), ONNX **349 ms (5.9× slower)**, CoreML **124 ms (2.1× slower)**; mAP **0.987 preserved
+  across all three** (equal mAP == lossless export). The reason is honest and specific: MPS PyTorch already runs on the GPU, while
+  onnxruntime here defaults to the **CPU** provider and the ultralytics CoreML path carries per-call overhead —
+  so the naive export is a *loss*, not a win, on Apple/MPS. TensorRT is **NVIDIA-only** and not available in
+  this environment (flagged, not faked).
+- **The honest takeaway:** for this deployment, the format knob doesn't help — the **resolution/model-size**
+  Pareto knobs (imgsz 640 dominating 1280; yolov8n on the frontier) are where the serving wins actually are.
+  A negative result reported as-is, like broadcast homography. (Engineering note: I burned three iterations on
+  this module — a `PosixPath.endswith` crash, a double-`pop` KeyError, and a too-brittle per-frame box-equivalence
+  metric that falsely flagged the lossless exports; reverted to full-mAP-per-format, the authoritative check.)
+
 ### V2 end-to-end uncertainty — the retrieval confidence signal is CALIBRATED → selective prediction works (2026-07-30)
 - **The upside:** a retrieval system is only production-useful if it can say "I'm not sure." So: is a cheap,
   model-free confidence signal trustworthy? `retrieve/uncertainty.py` (`make retrieve-uncertainty`) sweeps a

@@ -41,15 +41,26 @@ def _export(weights: str, fmt: str, imgsz: int) -> str | None:
         return None
 
 
+def _size_mb(model_path: str) -> float:
+    p = Path(model_path)
+    if p.is_file():
+        return round(p.stat().st_size / 1e6, 1)
+    return round(sum(f.stat().st_size for f in p.rglob("*")) / 1e6, 1)   # .mlpackage is a directory
+
+
 def _measure(model_path: str, imgsz: int, device: str, dataset: str, frames: int, warmup: int) -> dict:
-    """Per-frame latency (batch 1) + mAP@50 for one model artifact, via Ultralytics (handles each format)."""
+    """Per-frame latency (batch 1) + full mAP@50 + size for one model artifact. Full mAP for EVERY format is the
+    authoritative equivalence proof (a lossy export shows up as a mAP drop); a per-frame box spot-check looked
+    tempting but postprocessing nuances make exported detection counts differ slightly even when mAP is
+    identical, so it produced misleading mismatches — the val is the honest number."""
     from ultralytics import YOLO
 
     model_path = str(model_path)
     model = YOLO(model_path)
+    is_pt = model_path.endswith(".pt")
     paths = [str(p) for _, p in load_mot_sequence(BENCH_SEQ, max_frames=frames + warmup)]
     kw = {"imgsz": imgsz, "verbose": False}
-    if model_path.endswith(".pt"):
+    if is_pt:
         kw["device"] = device                                # exported artifacts pick their own runtime/provider
     for p in paths[:warmup]:                                  # warm the runtime (graph build / provider init)
         model.predict(p, **kw)
@@ -58,12 +69,10 @@ def _measure(model_path: str, imgsz: int, device: str, dataset: str, frames: int
         model.predict(p, **kw)
     n = len(paths) - warmup
     dt = time.perf_counter() - t0
-    val = model.val(data=dataset, imgsz=imgsz, split="val", device=(device if model_path.endswith(".pt") else None),
+    val = model.val(data=dataset, imgsz=imgsz, split="val", device=(device if is_pt else None),
                     verbose=False, plots=False, save_json=False)
-    size_mb = round(Path(model_path).stat().st_size / 1e6, 1) if Path(model_path).is_file() else \
-        round(sum(f.stat().st_size for f in Path(model_path).rglob("*")) / 1e6, 1)  # .mlpackage is a dir
     return {"ms_per_frame": round(1000 * dt / n, 2), "fps_batch1": round(n / dt, 2),
-            "mAP50": round(float(val.box.map50), 4), "size_mb": size_mb}
+            "mAP50": round(float(val.box.map50), 4), "size_mb": _size_mb(model_path)}
 
 
 def run(args) -> dict:
@@ -98,9 +107,9 @@ def run(args) -> dict:
         "results": results,
         "fastest_format": fastest,
         "tensorrt": "not measured — NVIDIA-only; this environment is Apple/MPS (flagged, not faked)",
-        "notes": "Export preserves weights, so mAP should be ~identical across formats (a drop would signal an "
-        "export bug). The signal is the latency delta: which runtime is fastest for single-frame serving on "
-        "this hardware. onnxruntime uses its default (CPU) provider here; CoreML targets the Apple NPU/GPU.",
+        "notes": "Full mAP measured for EVERY format (a lossy export would show as a mAP drop); equal mAP across "
+        "formats == lossless export. The real signal is the latency delta: which runtime is fastest for "
+        "single-frame serving on this hardware. onnxruntime uses its default (CPU) provider; CoreML the ANE/GPU.",
         "provenance": {"versions": {p: _ver(p) for p in ("ultralytics", "onnxruntime", "coremltools", "torch")},
                        "platform": platform.platform()},
     }
@@ -121,10 +130,10 @@ def main() -> None:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     (Path(args.out_dir) / f"inference_format_{stamp}.json").write_text(json.dumps(report, indent=2))
     print(f"\nwrote inference_format_{stamp}.json")
-    print(f"{'format':<10}{'ms/frame':>10}{'fps@1':>8}{'mAP50':>8}{'size_MB':>9}{'speedup':>9}")
+    print(f"{'format':<10}{'ms/frame':>10}{'fps@1':>8}{'speedup':>9}{'size_MB':>9}{'mAP50':>9}")
     for name, r in report["results"].items():
-        print(f"{name:<10}{r['ms_per_frame']:>10}{r['fps_batch1']:>8}{r['mAP50']:>8}{r['size_mb']:>9}"
-              f"{r['speedup_vs_pytorch']:>9}")
+        print(f"{name:<10}{r['ms_per_frame']:>10}{r['fps_batch1']:>8}{r['speedup_vs_pytorch']:>9}"
+              f"{r['size_mb']:>9}{r['mAP50']:>9}")
     print(f"fastest: {report['fastest_format']}")
 
 

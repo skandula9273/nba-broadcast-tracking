@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-07-30T20:12:08.420391+00:00",
+  "increment": "v2-inference-format-opt",
+  "stage": "detector deployment-format latency/accuracy (PyTorch vs ONNX vs CoreML), batch 1",
+  "detector": {
+    "weights": "weights/finetuned/best.pt",
+    "arch": "yolov8m (fine-tuned)",
+    "imgsz": 640,
+    "device_pytorch": "mps"
+  },
+  "bench": {
+    "sequence": "v_00HRwkvvjtQ_c007",
+    "frames_timed": 100,
+    "warmup": 10,
+    "batch": 1,
+    "note": "single-frame latency; NOT comparable to pareto.py batched throughput"
+  },
+  "results": {
+    "pytorch": {
+      "artifact": "weights/finetuned/best.pt",
+      "ms_per_frame": 58.25,
+      "fps_batch1": 17.17,
+      "mAP50": 0.9872,
+      "size_mb": 52.0,
+      "speedup_vs_pytorch": 1.0
+    },
+    "onnx": {
+      "artifact": "weights/finetuned/best.onnx",
+      "ms_per_frame": 348.73,
+      "fps_batch1": 2.87,
+      "mAP50": 0.9873,
+      "size_mb": 103.6,
+      "speedup_vs_pytorch": 0.17
+    },
+    "coreml": {
+      "artifact": "weights/finetuned/best.mlpackage",
+      "ms_per_frame": 124.24,
+      "fps_batch1": 8.05,
+      "mAP50": 0.9873,
+      "size_mb": 103.6,
+      "speedup_vs_pytorch": 0.47
+    }
+  },
+  "fastest_format": "pytorch",
+  "tensorrt": "not measured \u2014 NVIDIA-only; this environment is Apple/MPS (flagged, not faked)",
+  "notes": "Full mAP measured for EVERY format (a lossy export would show as a mAP drop); equal mAP across formats == lossless export. The real signal is the latency delta: which runtime is fastest for single-frame serving on this hardware. onnxruntime uses its default (CPU) provider; CoreML the ANE/GPU.",
+  "provenance": {
+    "versions": {
+      "ultralytics": "8.4.104",
+      "onnxruntime": "1.28.0",
+      "coremltools": "9.0",
+      "torch": "2.13.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}
