@@ -3,17 +3,21 @@
 Reconstruct player-and-ball tracking ("moving dots") from ordinary **NBA broadcast video**, train a
 **play-embedding model** on player-and-ball trajectories for similarity retrieval, and wrap both in a
 **measured, reproducible eval platform**. The point is the eval rigor and an honest research question, not a
-tracking demo (see **What runs today** below — the reconstruction-to-retrieval path is not yet wired end to end):
+tracking demo:
 
 > **How much do downstream basketball analytics (play retrieval, shot quality) degrade when computed on
 > CV-reconstructed tracking versus ground-truth tracking — and which perception errors matter most?**
 
 `hooptrack` is a placeholder name. See `docs/design-doc.md` for the full spec and engineering contract (with
-dated amendments) and `docs/increment-0N-*.md` for per-increment writeups. Status: **V1 in progress** — V0
-(detection + tracking + eval harness) done and floors locked; the embedding core, FAISS index, the degradation
-study, an order-robustness study, and a permutation-invariant encoder are done **on ground-truth tracks**;
-remaining V1 is the homography keypoint front-end, re-ID, and wiring the retrieval core to the pipeline output,
-then a demo + writeup.
+dated amendments) and `docs/depth-round-notes.md` for the decision log. Status: **V1 substantially complete.**
+V0 (detection + tracking + eval harness) is done and floors locked. The embedding core, FAISS index, degradation
+study, order-robustness study, and a permutation-invariant encoder are done; the perception stages (homography
+keypoint front-end, re-ID + jersey OCR, ball, analytics) are built and measured; and the **real tracker output
+is now wired into the retrieval core end to end** (reconstructed-vs-GT floor r@1 0.80; an in-domain
+broadcast-domain encoder beats it). **Semantic play retrieval is validated as achievable** (supervised
+precision@5 0.942 vs ~random for the SSL objective). Encoders are checkpointed so the retrieval and degradation
+numbers describe one model. Remaining: a deployed demo + the technical writeup (and GPU/label-gated follow-ups
+noted in the design doc). **94 tests pass.**
 
 ## What runs today
 
@@ -161,17 +165,28 @@ player-configuration spacing + phases; homography/re-ID `None` by default) · re
 `DOTS`. **Both** the eval harness and `serve POST /track` call `pipeline.py` for `detect → track` (the one
 shared path); homography/re-ID stay disabled, so both stop at image-coordinate tracks (no top-down "moving dots").
 
-## Quickstart (once implemented)
+## Quickstart
 
 ```
-make install         # deps (+ TrackEval from git)
-make test            # the real metric tests pass today (34)
-make eval            # tracking eval harness -> eval_results/*.json
-make retrieve-corpus # build the SportVU possession corpus
-make retrieve-floor  # recall@k hand-feature floor (inc-06a)
-make retrieve-train  # trained trajectory transformer + FAISS index (inc-06b)
-make retrieve-study  # reconstructed-vs-GT degradation study (inc-07)
-make serve           # FastAPI service
+make install               # deps (+ TrackEval from git)
+make test                  # the real metric tests pass today (94)
+make eval                  # tracking eval harness -> eval_results/*.json
+make detect-generalization # per-game detection mAP (cross-game generalization)
+make serve-bench           # serving latency baseline (detect->track fps)
+# --- retrieval core (SportVU corpus) ---
+make retrieve-corpus         # build the SportVU possession corpus
+make retrieve-train          # trained trajectory transformer + FAISS index (saves a checkpoint)
+make retrieve-study          # reconstructed-vs-GT degradation study  (--checkpoint <pt> to reuse a saved encoder)
+make retrieve-semantic-validate  # VALIDATE semantic retrieval: supervised (SupCon) vs floor/SSL/random
+make retrieve-end2end        # REAL tracker output -> tensor -> FAISS retrieval (the wired path)
+make retrieve-bcast-encoder  # in-domain broadcast encoder, recon-vs-GT on a held-out game
+make retrieve-nl             # NL play query demo (text -> semantic constraints -> possessions)
+# --- perception add-ons ---
+make ball-eval               # COCO 'sports ball' coverage
+make jersey-eval             # jersey-OCR coverage ablation (GT boxes)
+make jersey-eval-tracker     # jersey-OCR on real tracker output (+ jersey-eval-stitch for the recovery lever)
+make jersey-accuracy         # jersey-OCR accuracy vs crop height (synthetic labels)
+make serve                   # FastAPI service (POST /track)
 ```
 
 ## Layout

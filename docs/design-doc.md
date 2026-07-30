@@ -23,6 +23,32 @@ while jitter/dropout cost ~nothing; and the learned encoder is *more fragile* to
 naive floor (it's order-sensitive). re-ID is the dominant *unmeasured* risk. Remaining V1: add
 id-swap/permutation augmentation and re-measure; build + measure re-ID; demo + writeup.
 
+**Amendment — 2026-07-30 (V1 substantially complete; the perception stages, the end-to-end wire, and a 9-point
+hardening pass landed).** The rest of V1 is measured; details in `docs/depth-round-notes.md` (dated entries).
+- **Perception stages real:** homography keypoint front-end (`CourtKeypointNet`) — 503px floor → **16px** on
+  held-out arenas with domain augmentation, but a measured **negative**: it does NOT transfer to broadcast
+  (~no confident keypoints; a data limit, not a model one). re-ID = OSNet appearance + **jersey-OCR** overlay;
+  analytics = real player-configuration (spacing + phases), upgraded to **true possessions** when a ball track
+  is supplied. Ball = COCO 'sports ball' (no training), measured **~24%** frame coverage.
+- **Retrieval wired to the pipeline (the old "not wired" edge, closed):** `reconstruct.tracks_to_tensor` +
+  `end2end.py` run the **real tracker output** through the tensor adapter + FAISS index — reconstructed-vs-GT
+  floor recall@1 **0.80** (real perception error is a *harder* hit than inc-07's simulated budget implied). An
+  in-domain **broadcast-domain encoder** (`broadcast_encoder.py`) then **beats the floor** on a held-out game
+  (r@1 0.857 → 0.881), so the trained encoder — not just the floor — is valid end to end.
+- **The headline the centerpiece needed — semantic retrieval VALIDATED:** the augmentation-SSL encoder sits at
+  ~random on a play-type axis, but changing **only the objective** to supervised-contrastive lifts held-out-game
+  semantic precision@5 to **0.942** — semantic play retrieval is achievable; the SSL objective was the limit.
+- **re-ID axis now MEASURED, not just a sensitivity sweep:** jersey coverage on real tracker output → ~4/10
+  unresolved players/possession; folded into the study, trained realistic recall@1 **0.669 → 0.266** (re-ID is
+  the quantified dominant cost). A fragment-**stitching** lever recovers a third of the coverage (0.365 → 0.479,
+  consensus rises), wired into the live `ReIDIdentifier`.
+- **Hardening:** per-game detection mAP uniform **0.970–0.991** (not one easy game); serving latency baseline
+  **9.9 fps** (detection = 94%); jersey-OCR accuracy shows **resolution isn't the bottleneck** (pose/blur is);
+  an NL query layer over the validated semantic axes; **encoder checkpointing** so the retrieval and degradation
+  artifacts provably describe **one model** (numbers unchanged). Capacity-matched d128 set-arch is **GPU-gated**
+  (fits MPS memory at batch≤256 — the old "OOM at d128" was really "OOM at batch512" — but MPS can't train it;
+  a GPU-ready harness is committed). Remaining V1: the deployed demo + the technical writeup.
+
 ---
 
 ## Project
