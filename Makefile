@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto detect-export-bench track eval serve serve-bench retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl retrieve-uncertainty setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto detect-export-bench track eval serve serve-bench retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl retrieve-uncertainty demo setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -43,6 +43,9 @@ serve-bench:  ## serving latency baseline for detect->track (ms/frame, fps) -> e
 
 serve:  ## launch the FastAPI service (/health; POST /track runs the shared detect->track pipeline, image-coord tracks)
 	uvicorn hooptrack.serve.app:app --reload
+
+demo:  ## honest walkthrough: NL query + similar-play retrieval (calibrated confidence) on SportVU GT + the broadcast limit
+	python -m hooptrack.demo
 
 retrieve-corpus:  ## build the SportVU possession corpus (increment-06) into data/sportvu
 	python -c "import numpy as np; from hooptrack.retrieve.possessions import build_corpus; c,m=build_corpus(n_games=12,T=48,max_possessions=8000,cache_dir='data/sportvu'); np.savez('data/sportvu/corpus_g12_T48.npz',corpus=c,meta=np.array(m,dtype=object)); print('built',c.shape)"
