@@ -725,6 +725,19 @@ auto-registers a frame -> `court_xy`.
   committed 1280 `bytetrack_ft` output (referenced by the degradation studies). **640 is now the recommended
   operating point** — the V0-locked HOTA floor of 0.473 was measured at the dominated 1280 point; 0.525 @ 640
   is strictly better at 2.6× the speed. Both eval JSONs committed so the delta is reproducible.
+- **Model-SIZE axis — fine-tuned yolov8n (2026-07-30).** The second Pareto knob, done properly: fine-tuned
+  yolov8n on the SAME recipe as the yolov8m (20 epochs, imgsz 640, batch 4, seed 13, subsample 5 — one variable,
+  the backbone), landed in `weights/finetuned_n/` so the committed yolov8m is untouched (`finetune.py` made
+  clobber-safe via `--base-weights`/`--out-subdir`). Caught + fixed a recipe-mismatch mid-flight: I'd launched
+  30 epochs, but the committed yolov8m used **20** — restarted at 20 for a fair one-variable comparison (also
+  finished sooner). Two-model frontier (`make detect-pareto`, auto-includes the nano):
+  yolov8m@640 **0.987 / 24.8 fps / 25.9M** · yolov8m@480 0.977 / 36.8 / 25.9M · **yolov8n@640 0.973 / 44.7 fps /
+  3.0M**. **yolov8n is ON the frontier** — fastest (44.7 fps) and 8.6× smaller (6 MB vs 52 MB) for only **−1.4
+  mAP** vs the best yolov8m point; it does NOT dominate yolov8m@640 (peak accuracy stays there), but it's the
+  real-time / low-footprint choice and extends the curve. The striking part: a **nano** model nearly matches the
+  medium on this single-class athlete task (0.973 vs 0.987) — the task is easy enough that 8.6× the capacity buys
+  ~1 point. So the deployment menu is now measured: **yolov8m@640** for peak accuracy, **yolov8n@640** for
+  edge/real-time. Committed `detector_pareto_*.json` (the two-model run) + the yolov8n meta.
 
 ### Serving latency baseline — the missing operating point for the V2 Pareto (2026-07-29)
 - **Why:** "serving optimization + Pareto frontier" is the headline V2 item, but there was no *before* number —

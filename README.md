@@ -113,8 +113,11 @@ fine-tuned at 640 (inferring at 1280 is a train/infer mismatch that costs both).
 accuracy, ~26 fps near real-time) and **480** (0.977 mAP, ~36 fps). **Applied it + re-measured HOTA**
 (`configs/v0_finetuned_640.yaml`): 640 beats 1280 on **every** tracking metric too — **HOTA 0.473 → 0.525**,
 DetA 0.71 → 0.75, AssA 0.32 → 0.37, MOTA 0.87 → 0.93, IDF1 0.50 → 0.58 — so the mismatch was silently costing
-tracking quality all along. The serving win is a config change, not a new model. The model-size axis
-(a fine-tuned yolov8n) is the documented next point.
+tracking quality all along. The serving win is a config change, not a new model. **Model-size axis** — a
+fine-tuned **yolov8n** (same recipe, one variable = backbone) lands **on the frontier**: **0.973 mAP @ 44.7 fps,
+3.0M params (6 MB)** — the fastest/smallest point, only −1.4 mAP vs yolov8m@640, so a nano model nearly matches
+the medium on this single-class task. The measured deployment menu: **yolov8m@640** for peak accuracy,
+**yolov8n@640** for edge/real-time.
 
 The embedding core produced three headline findings — all measured:
 

@@ -57,23 +57,37 @@ def _frontier(points: list[dict]) -> None:
         p["on_frontier"] = not dominated
 
 
-def run(args) -> dict:
-    cfg = load_config(args.config)
-    weights = cfg.detect.weights
+def _model_stats(weights: str) -> tuple[int | None, float | None]:
     n_params = None
     try:
         from ultralytics import YOLO
         n_params = sum(p.numel() for p in YOLO(weights).model.parameters())
     except Exception:
         pass
-    weight_mb = round(Path(weights).stat().st_size / 1e6, 1) if Path(weights).exists() else None
+    mb = round(Path(weights).stat().st_size / 1e6, 1) if Path(weights).exists() else None
+    return n_params, mb
+
+
+def run(args) -> dict:
+    cfg = load_config(args.config)
+    weights = cfg.detect.weights
+    n_params, weight_mb = _model_stats(weights)
 
     tmp = Path(tempfile.mkdtemp(prefix="pareto_"))
     points = []
+    # primary axis: the yolov8m detector swept over inference imgsz
     for imgsz in args.imgsz:
         fps, ms = _fps(weights, imgsz, cfg.detect.device, args.frames, args.warmup)
-        points.append({"name": f"yolov8m_ft@{imgsz}", "imgsz": imgsz,
-                       "mAP50": _map50(weights, args.dataset, imgsz, cfg.detect.device, tmp),
+        points.append({"name": f"yolov8m_ft@{imgsz}", "model": "yolov8m_ft", "imgsz": imgsz,
+                       "n_params": n_params, "mAP50": _map50(weights, args.dataset, imgsz, cfg.detect.device, tmp),
+                       "fps": fps, "ms_per_frame": ms})
+    # model-SIZE axis: a fine-tuned yolov8n at its own imgsz (a second, smaller model — a real Pareto point)
+    if args.nano_weights and Path(args.nano_weights).exists():
+        nparams, nmb = _model_stats(args.nano_weights)
+        fps, ms = _fps(args.nano_weights, args.nano_imgsz, cfg.detect.device, args.frames, args.warmup)
+        points.append({"name": f"yolov8n_ft@{args.nano_imgsz}", "model": "yolov8n_ft", "imgsz": args.nano_imgsz,
+                       "n_params": nparams, "weight_mb": nmb,
+                       "mAP50": _map50(args.nano_weights, args.dataset, args.nano_imgsz, cfg.detect.device, tmp),
                        "fps": fps, "ms_per_frame": ms})
     _frontier(points)
 
@@ -88,10 +102,9 @@ def run(args) -> dict:
                   "mAP_split": "SportsMOT basketball-val (YOLO labels, class athlete)"},
         "points": points,
         "frontier": [p["name"] for p in points if p["on_frontier"]],
-        "notes": "Accuracy-latency frontier via the DEPLOYABLE resolution knob (no retraining to move along it). "
-        "Deployed default is imgsz 1280. The model-SIZE axis (a fine-tuned yolov8n) is a separate knob needing "
-        "its own matched fine-tune — the documented next point, not faked here. mAP at imgsz != 640 measures the "
-        "inference-resolution effect (the model was fine-tuned at 640).",
+        "notes": "Accuracy-latency frontier via the DEPLOYABLE resolution knob (no retraining to move along it) "
+        "PLUS the model-SIZE axis (a matched fine-tuned yolov8n at its own imgsz). mAP at imgsz != 640 measures "
+        "the inference-resolution effect (the yolov8m was fine-tuned at 640).",
         "provenance": {"versions": {p: _ver(p) for p in ("ultralytics", "torch")}, "platform": platform.platform()},
     }
 
@@ -101,6 +114,9 @@ def main() -> None:
     ap.add_argument("--config", default="configs/v0_finetuned.yaml")
     ap.add_argument("--dataset", default="data/sportsmot/_yolo_ft/sportsmot_basketball.yaml")
     ap.add_argument("--imgsz", type=int, nargs="+", default=[1280, 960, 640, 480])
+    ap.add_argument("--nano-weights", default="weights/finetuned_n/best.pt", help="fine-tuned yolov8n best.pt "
+                    "(model-size axis); skipped if absent")
+    ap.add_argument("--nano-imgsz", type=int, default=640)
     ap.add_argument("--frames", type=int, default=120)
     ap.add_argument("--warmup", type=int, default=8)
     ap.add_argument("--out-dir", default="eval_results")
@@ -110,9 +126,11 @@ def main() -> None:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     (Path(args.out_dir) / f"detector_pareto_{stamp}.json").write_text(json.dumps(report, indent=2))
     print(f"wrote detector_pareto_{stamp}.json  ({report['detector']['weight_mb']} MB, {report['detector']['n_params']} params)")
-    print(f"{'point':<18}{'mAP50':>8}{'fps':>8}{'ms/frame':>10}{'  frontier':>10}")
+    print(f"{'point':<18}{'params':>10}{'mAP50':>8}{'fps':>8}{'ms/frame':>10}{'  frontier':>10}")
     for p in report["points"]:
-        print(f"{p['name']:<18}{p['mAP50']:>8}{p['fps']:>8}{p['ms_per_frame']:>10}{'  *' if p['on_frontier'] else '':>10}")
+        pm = f"{p.get('n_params') / 1e6:.1f}M" if p.get("n_params") else "?"
+        print(f"{p['name']:<18}{pm:>10}{p['mAP50']:>8}{p['fps']:>8}{p['ms_per_frame']:>10}"
+              f"{'  *' if p['on_frontier'] else '':>10}")
 
 
 if __name__ == "__main__":

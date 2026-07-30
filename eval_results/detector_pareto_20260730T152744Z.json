@@ -1,0 +1,85 @@
+{
+  "timestamp": "2026-07-30T15:27:44.096983+00:00",
+  "increment": "v2-detector-pareto",
+  "stage": "detector accuracy-latency Pareto over inference imgsz (V2 serving-optimization first step)",
+  "detector": {
+    "weights": "weights/finetuned/best.pt",
+    "arch": "yolov8m (fine-tuned, class 'athlete')",
+    "n_params": 25856899,
+    "weight_mb": 52.0,
+    "device": "mps",
+    "note": "one variable = inference imgsz; a zero-retraining live knob"
+  },
+  "bench": {
+    "sequence": "v_00HRwkvvjtQ_c007",
+    "frames_timed": 120,
+    "warmup": 8,
+    "mAP_split": "SportsMOT basketball-val (YOLO labels, class athlete)"
+  },
+  "points": [
+    {
+      "name": "yolov8m_ft@1280",
+      "model": "yolov8m_ft",
+      "imgsz": 1280,
+      "n_params": 25856899,
+      "mAP50": 0.9668,
+      "fps": 10.55,
+      "ms_per_frame": 94.81,
+      "on_frontier": false
+    },
+    {
+      "name": "yolov8m_ft@960",
+      "model": "yolov8m_ft",
+      "imgsz": 960,
+      "n_params": 25856899,
+      "mAP50": 0.9792,
+      "fps": 18.7,
+      "ms_per_frame": 53.46,
+      "on_frontier": false
+    },
+    {
+      "name": "yolov8m_ft@640",
+      "model": "yolov8m_ft",
+      "imgsz": 640,
+      "n_params": 25856899,
+      "mAP50": 0.9872,
+      "fps": 24.76,
+      "ms_per_frame": 40.39,
+      "on_frontier": true
+    },
+    {
+      "name": "yolov8m_ft@480",
+      "model": "yolov8m_ft",
+      "imgsz": 480,
+      "n_params": 25856899,
+      "mAP50": 0.9767,
+      "fps": 36.76,
+      "ms_per_frame": 27.21,
+      "on_frontier": true
+    },
+    {
+      "name": "yolov8n_ft@640",
+      "model": "yolov8n_ft",
+      "imgsz": 640,
+      "n_params": 3011043,
+      "weight_mb": 6.2,
+      "mAP50": 0.9732,
+      "fps": 44.72,
+      "ms_per_frame": 22.36,
+      "on_frontier": true
+    }
+  ],
+  "frontier": [
+    "yolov8m_ft@640",
+    "yolov8m_ft@480",
+    "yolov8n_ft@640"
+  ],
+  "notes": "Accuracy-latency frontier via the DEPLOYABLE resolution knob (no retraining to move along it) PLUS the model-SIZE axis (a matched fine-tuned yolov8n at its own imgsz). mAP at imgsz != 640 measures the inference-resolution effect (the yolov8m was fine-tuned at 640).",
+  "provenance": {
+    "versions": {
+      "ultralytics": "8.4.104",
+      "torch": "2.13.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}
