@@ -43,29 +43,44 @@ def _load_mot(path: Path) -> list[Track]:
     return tracks
 
 
-def build_tensors(seqs: list[str], tracker: str, T: int, window: int) -> tuple[np.ndarray, np.ndarray, int]:
-    """Window every seq; return (gt_tensors, recon_tensors) of shape (N, T, 11, 2), aligned by window."""
+def build_tensors(seqs: list[str], tracker: str, T: int, window: int,
+                  stitch: dict | None = None) -> tuple[np.ndarray, np.ndarray, int, dict]:
+    """Window every seq; return (gt_tensors, recon_tensors, n_seqs, stats). When `stitch` is given, gap-close the
+    tracker fragments BEFORE building the recon tensors — testing whether fixing fragmentation (finding 1's
+    culprit) improves the end-to-end retrieval. `stats` reports the id-count reduction."""
     gt_list, recon_list = [], []
+    n_ids_raw = n_ids_stitched = 0
     for seq in seqs:
         info = read_seqinfo(FRAMES_ROOT / seq)
         w, h = info["imWidth"] or 1280, info["imHeight"] or 720
         gt = _load_mot(GT_ROOT / seq / "gt" / "gt.txt")
         recon = _load_mot(TRACKERS_ROOT / tracker / "data" / f"{seq}.txt")
+        n_ids_raw += len({t.track_id for t in recon})
+        if stitch is not None:
+            from ..reid.stitch import stitch_fragments
+            recon = stitch_fragments(recon, **stitch)
+        n_ids_stitched += len({t.track_id for t in recon})
         for f0, f1 in frame_windows(gt, window):
             gt_list.append(tracks_to_tensor(gt, f0, f1, T, w, h))
             recon_list.append(tracks_to_tensor(recon, f0, f1, T, w, h))
-    return np.stack(gt_list), np.stack(recon_list), len(seqs)
+    return np.stack(gt_list), np.stack(recon_list), len(seqs), {"n_ids_raw": n_ids_raw,
+                                                                "n_ids_stitched": n_ids_stitched}
 
 
 def run(args) -> dict:
     seqs = sorted(p.name for p in GT_ROOT.iterdir() if (p / "gt" / "gt.txt").is_file())
     seqs = [s for s in seqs if (TRACKERS_ROOT / args.tracker / "data" / f"{s}.txt").is_file()]
-    gt, recon, n_seq = build_tensors(seqs, args.tracker, args.T, args.window)
+    gt, recon, n_seq, _ = build_tensors(seqs, args.tracker, args.T, args.window)
     n = len(gt)
 
     genc = features(gt)                                          # gallery = GT windows (floor features)
     recon_vs_gt = _metrics_rk(_faiss_rankings(features(recon), genc))   # query = reconstructed
     gt_self = _metrics_rk(_faiss_rankings(genc, genc))          # sanity: GT retrieves itself (window distinctness)
+
+    # Finding-1 remedy, end-to-end: stitch tracker fragments before the tensor, retrieve vs the SAME GT gallery.
+    stitch_cfg = {"max_gap": args.stitch_gap, "max_dist_factor": args.stitch_dist}
+    _, recon_st, _, stitch_stats = build_tensors(seqs, args.tracker, args.T, args.window, stitch=stitch_cfg)
+    recon_vs_gt_stitched = _metrics_rk(_faiss_rankings(features(recon_st), genc))
 
     return {
         "timestamp": datetime.now(UTC).isoformat(),
@@ -77,7 +92,11 @@ def run(args) -> dict:
         "method": {"query": "tracker-reconstructed window tensor", "gallery": "GT window tensors",
                    "relevant": "same window's GT", "retrieval": "FAISS IndexFlatIP (cosine)",
                    "encoder": "hand-feature floor (coordinate-agnostic; valid on image-coord tracks)"},
-        "results": {"reconstructed_vs_gt": recon_vs_gt, "gt_self_retrieval_sanity": gt_self},
+        "results": {"reconstructed_vs_gt": recon_vs_gt,
+                    "reconstructed_vs_gt_STITCHED": recon_vs_gt_stitched,
+                    "stitch": {**stitch_cfg, **stitch_stats,
+                               "delta_recall@1": round(recon_vs_gt_stitched["recall@1"] - recon_vs_gt["recall@1"], 4)},
+                    "gt_self_retrieval_sanity": gt_self},
         "blockers_made_concrete": {
             "no_ball": "entity 0 (ball) zeroed — single-class athlete detector",
             "no_broadcast_homography": "image-coordinate foot-points, not court coords (keypoint net doesn't "
@@ -100,6 +119,8 @@ def main() -> None:
     ap.add_argument("--tracker", default="bytetrack_ft")
     ap.add_argument("--T", type=int, default=48)
     ap.add_argument("--window", type=int, default=48)
+    ap.add_argument("--stitch-gap", type=int, default=30, help="fragment-stitch max frame gap")
+    ap.add_argument("--stitch-dist", type=float, default=2.0, help="fragment-stitch max seam distance (box-diags)")
     ap.add_argument("--out-dir", default="eval_results")
     args = ap.parse_args()
 
@@ -110,7 +131,10 @@ def main() -> None:
     d, r = report["dataset"], report["results"]
     print(f"wrote {out}")
     print(f"n_windows={d['n_windows']} (chance r@1={d['chance_recall@1']})")
-    print(f"reconstructed-vs-GT: {r['reconstructed_vs_gt']}")
+    print(f"reconstructed-vs-GT:           {r['reconstructed_vs_gt']}")
+    print(f"reconstructed-vs-GT +STITCH:   {r['reconstructed_vs_gt_STITCHED']}  "
+          f"(ids {r['stitch']['n_ids_raw']}->{r['stitch']['n_ids_stitched']}, "
+          f"delta r@1 {r['stitch']['delta_recall@1']:+})")
     print(f"GT self-retrieval sanity: {r['gt_self_retrieval_sanity']}")
 
 

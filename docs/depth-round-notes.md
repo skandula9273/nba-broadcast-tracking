@@ -558,6 +558,17 @@ auto-registers a frame -> `court_xy`.
 - **The honesty:** I led with the floor because using the domain-mismatched trained transformer would produce a
   misleading number; the FAISS index is the real one the committed evals use; the sanity check (GT self-retrieval
   = 1.0) confirms the windows are distinguishable, so 0.80 is reconstruction cost, not window ambiguity.
+- **Tested finding-1's remedy end-to-end — fragment stitching, and it does NOT help retrieval (an informative
+  negative, 2026-07-30).** Stitching recovered *jersey coverage* (0.365→0.479), so the obvious hypothesis was
+  that it would also lift the end-to-end retrieval floor. Wired `--stitch` into `end2end.py` (stitch the tracker
+  fragments before the tensor, retrieve vs the same GT gallery): ids consolidated **949 → 480** (2×), but
+  recall@1 **0.80 → 0.796** (Δ −0.004, unchanged). **Why the mechanisms differ:** jersey coverage counts *every*
+  track-id, so merging short fragments directly helps; but the retrieval tensor already picks the **top-10
+  most-present ids per 48-frame window** — it pre-filters to the substantial tracks, so stitching mostly merges
+  short fragments that were never in the top-10 anyway, making it a near-no-op for the windowed representation.
+  **The refinement to finding 1:** the retrieval-relevant association error is per-window **player-slot identity
+  (re-ID)**, not global fragment *count* — so the lever is real re-ID, not fragment stitching. A hypothesis
+  tested and falsified with one measurement, reported as-is (`make retrieve-end2end` now reports both).
 
 ### Broadcast-domain encoder — the trained encoder made valid end-to-end (2026-07-29)
 - **What the 0.80 pointed at:** the trained transformer was out-of-domain on image-coord broadcast tracks, so

@@ -1,0 +1,63 @@
+{
+  "timestamp": "2026-07-30T20:29:54.129478+00:00",
+  "increment": "end2end-wire",
+  "stage": "REAL pipeline output -> tensor -> FAISS retrieval (reconstructed vs GT)",
+  "dataset": {
+    "source": "SportsMOT basketball-val",
+    "n_seqs": 15,
+    "n_windows": 255,
+    "window_frames": 48,
+    "T": 48,
+    "tracker": "bytetrack_ft",
+    "tracker_hota": 0.473,
+    "chance_recall@1": 0.0039
+  },
+  "method": {
+    "query": "tracker-reconstructed window tensor",
+    "gallery": "GT window tensors",
+    "relevant": "same window's GT",
+    "retrieval": "FAISS IndexFlatIP (cosine)",
+    "encoder": "hand-feature floor (coordinate-agnostic; valid on image-coord tracks)"
+  },
+  "results": {
+    "reconstructed_vs_gt": {
+      "recall@1": 0.8,
+      "recall@5": 0.8314,
+      "recall@10": 0.8431,
+      "MRR": 0.8115
+    },
+    "reconstructed_vs_gt_STITCHED": {
+      "recall@1": 0.7961,
+      "recall@5": 0.8275,
+      "recall@10": 0.8431,
+      "MRR": 0.811
+    },
+    "stitch": {
+      "max_gap": 30,
+      "max_dist_factor": 2.0,
+      "n_ids_raw": 949,
+      "n_ids_stitched": 480,
+      "delta_recall@1": -0.0039
+    },
+    "gt_self_retrieval_sanity": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "recall@10": 1.0,
+      "MRR": 1.0
+    }
+  },
+  "blockers_made_concrete": {
+    "no_ball": "entity 0 (ball) zeroed \u2014 single-class athlete detector",
+    "no_broadcast_homography": "image-coordinate foot-points, not court coords (keypoint net doesn't transfer to broadcast) \u2014 so the SportVU-trained transformer is out-of-domain; floor used instead",
+    "fragmentation": "top-10 most-present tracker ids per window, canonical x-order; a fragmented/dropped player is real reconstruction error and shows as tensor mismatch",
+    "windows_not_possessions": "SportsMOT is continuous tracking, not possession-segmented; fixed 48-frame non-overlapping windows are the retrieval items"
+  },
+  "provenance": {
+    "versions": {
+      "numpy": "2.3.5",
+      "faiss-cpu": "1.14.3"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  },
+  "notes": "First run of REAL pipeline output through the retrieval core + index (was fed only from SportVU GT). Upgrades inc-07's simulated error model to the actual tracker's errors on the perception side. Trained transformer needs a broadcast-domain retrain (documented blocker); floor is the valid coordinate-agnostic metric here."
+}
