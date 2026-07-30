@@ -717,6 +717,14 @@ auto-registers a frame -> `court_xy`.
 - **Honest scope:** one variable (imgsz) on one fixed model. The model-SIZE axis (a fine-tuned yolov8n) is a
   separate knob needing its own matched fine-tune — the next point, not faked. A frontier from a real knob that
   *changed the deployment recommendation* is a better V2 first step than a hand-drawn accuracy-latency curve.
+- **APPLIED it + re-measured HOTA (`configs/v0_finetuned_640.yaml`, tracker `bytetrack_ft_640`):** the Pareto
+  was a mAP argument; the tracking re-measurement makes it undeniable — imgsz 640 beats the deployed 1280 on
+  **every** tracking metric AND is 2.6× faster: **HOTA 0.4728 → 0.5252 (+0.052)**, DetA 0.707 → 0.748, AssA
+  0.317 → 0.370, MOTA 0.874 → 0.927, IDF1 0.505 → 0.581. The train/infer resolution mismatch was silently
+  costing **HOTA all along**, not just detection mAP and latency. The distinct `tracker_name` protects the
+  committed 1280 `bytetrack_ft` output (referenced by the degradation studies). **640 is now the recommended
+  operating point** — the V0-locked HOTA floor of 0.473 was measured at the dominated 1280 point; 0.525 @ 640
+  is strictly better at 2.6× the speed. Both eval JSONs committed so the delta is reproducible.
 
 ### Serving latency baseline — the missing operating point for the V2 Pareto (2026-07-29)
 - **Why:** "serving optimization + Pareto frontier" is the headline V2 item, but there was no *before* number —

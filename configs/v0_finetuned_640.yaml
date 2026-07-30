@@ -1,0 +1,46 @@
+# V2 Pareto follow-up: the fine-tuned detector inferred at imgsz 640 (NOT 1280). ONE variable vs
+# configs/v0_finetuned.yaml (detect.imgsz: 1280 -> 640). The detector Pareto (make detect-pareto) showed
+# imgsz 1280 is Pareto-DOMINATED: the model was fine-tuned at 640, so inferring at 1280 is a train/infer
+# mismatch that costs BOTH mAP (0.987@640 -> 0.967@1280) and speed (2.6x slower). This config applies the
+# recommended 640 operating point and re-measures HOTA. tracker_name is distinct (bytetrack_ft_640) so the
+# committed 1280 bytetrack_ft output — which the degradation studies reference — is left intact.
+
+seed: 13
+
+detect:
+  model: yolo
+  weights: weights/finetuned/best.pt
+  conf: 0.25
+  iou: 0.7
+  classes: [player, ball]
+  device: mps
+  imgsz: 640             # <-- the one variable (v0_finetuned.yaml: 1280); matches the fine-tune imgsz
+  batch: 16
+  person_class: 0        # single class 'athlete'
+
+track:
+  method: bytetrack
+  min_conf: 0.1
+  use_reid: false
+  track_thresh: 0.45
+  match_thresh: 0.8
+  track_buffer: 25
+
+homography: {method: kalicalib, enabled: false}
+reid: {model: osnet, enabled: false}
+embedding: {enabled: false, arch: trajectory_transformer, dim: 128, objective: contrastive, window_seconds: 8}
+retrieval: {enabled: false, index: faiss, top_k: 10}
+
+eval:
+  dataset: sportsmot
+  data_dir: data/sportsmot
+  split: basketball
+  mot_split: val
+  benchmark: SportsMOT
+  metrics: [hota, mota, idf1]
+  retrieval_ks: [1, 5, 10]
+  out_dir: eval_results
+  max_sequences: null
+  max_frames: null
+  cache_detections: true
+  tracker_name: bytetrack_ft_640    # distinct from bytetrack_ft (1280) — protects the committed output

@@ -103,7 +103,8 @@ def prepare_data(data_dir: Path, subsample: int) -> tuple[Path, dict]:
 
 def train(
     cfg_path: str, epochs: int, imgsz: int, batch: int, subsample: int, device: str,
-    amp: bool = False, deterministic: bool = False,
+    amp: bool = False, deterministic: bool = False, base_weights: str | None = None,
+    out_subdir: str = "finetuned",
 ) -> dict:
     from ultralytics import YOLO
 
@@ -112,10 +113,12 @@ def train(
     dataset_yaml, counts = prepare_data(data_dir, subsample)
     print(f"YOLO dataset ready: {counts}  -> {dataset_yaml}")
 
-    weights = cfg.detect.weights or "yolov8m.pt"
+    # base_weights lets us fine-tune a DIFFERENT backbone (e.g. yolov8n for the model-size Pareto axis) without
+    # touching the committed yolov8m; out_subdir keeps its weights/ dir separate so best.pt is never clobbered.
+    weights = base_weights or cfg.detect.weights or "yolov8m.pt"
     model = YOLO(weights)
     project = str((data_dir / "_ft_runs").resolve())
-    name = f"basketball_ft_e{epochs}_s{subsample}_i{imgsz}"
+    name = f"basketball_ft_{Path(weights).stem}_e{epochs}_s{subsample}_i{imgsz}"
     # MPS notes (learned from the 1-epoch measurement): amp on MPS -> NaN losses; large batch/imgsz saturate
     # the 16GB unified memory and thrash. amp=False + batch 4 + imgsz 640 + cache off keep it stable.
     model.train(
@@ -124,7 +127,7 @@ def train(
         amp=amp, deterministic=deterministic, cache=False,
     )
     best = Path(model.trainer.best)  # robust to Ultralytics save_dir layout
-    out_dir = Path("weights") / "finetuned"
+    out_dir = Path("weights") / out_subdir
     out_dir.mkdir(parents=True, exist_ok=True)
     dst = out_dir / "best.pt"
     if best.exists():
@@ -149,9 +152,14 @@ def main() -> None:
     ap.add_argument("--device", default="mps")
     ap.add_argument("--amp", action="store_true", default=False)          # AMP on MPS -> NaN losses
     ap.add_argument("--deterministic", action="store_true", default=False)
+    ap.add_argument("--base-weights", default=None, help="backbone to fine-tune (e.g. yolov8n.pt); "
+                    "default = config weights or yolov8m.pt")
+    ap.add_argument("--out-subdir", default="finetuned", help="weights/<subdir>/best.pt (keep separate to "
+                    "avoid clobbering the committed yolov8m in weights/finetuned/)")
     args = ap.parse_args()
     train(args.config, args.epochs, args.imgsz, args.batch, args.subsample, args.device,
-          amp=args.amp, deterministic=args.deterministic)
+          amp=args.amp, deterministic=args.deterministic, base_weights=args.base_weights,
+          out_subdir=args.out_subdir)
 
 
 if __name__ == "__main__":

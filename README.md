@@ -98,8 +98,9 @@ detected**; model-selected on basketball-val, the same split HOTA is scored on, 
 to `eval_results/detection_*.json`). Per-game breakdown (`make detect-generalization`): **0.970–0.991, std
 0.009** across the 4 distinct games — uniform, so the headline generalizes across games (arenas/teams/broadcast
 styles), not one easy game; a truly held-out cross-*dataset* number needs SportsMOT test (Codalab). · tracking
-HOTA **0.301 → 0.473** on SportsMOT basketball-val, via TrackEval — arc: ByteTrack → BoT-SORT → attribution →
-detector fine-tune.
+HOTA **0.301 → 0.473 → 0.525** on SportsMOT basketball-val, via TrackEval — arc: ByteTrack → BoT-SORT →
+attribution → detector fine-tune → **fixing the inference resolution to 640** (the Pareto finding below applied
++ re-measured; the deployed 1280 was silently costing HOTA, DetA, AssA, MOTA, IDF1 — all improved at 640).
 
 **Serving latency baseline (`make serve-bench`, MPS):** the deployed `detect → track` path runs at
 **9.9 fps (101 ms/frame)** — **detection is 94% of it** (94.5 ms/frame, YOLOv8m @ imgsz 1280), tracking is
@@ -109,8 +110,10 @@ detector fine-tune.
 imgsz turns that baseline into a measured frontier — and shows the **deployed imgsz 1280 is Pareto-dominated**:
 imgsz **640 gives higher mAP (0.987 vs 0.967) AND 2.6× the fps (26.5 vs 10.2)**, because the model was
 fine-tuned at 640 (inferring at 1280 is a train/infer mismatch that costs both). Frontier = **640** (peak
-accuracy, ~26 fps near real-time) and **480** (0.977 mAP, ~36 fps). So the serving win is a config change, not
-a new model — deploy at 640 (re-measuring HOTA at the new imgsz is the follow-up). The model-size axis
+accuracy, ~26 fps near real-time) and **480** (0.977 mAP, ~36 fps). **Applied it + re-measured HOTA**
+(`configs/v0_finetuned_640.yaml`): 640 beats 1280 on **every** tracking metric too — **HOTA 0.473 → 0.525**,
+DetA 0.71 → 0.75, AssA 0.32 → 0.37, MOTA 0.87 → 0.93, IDF1 0.50 → 0.58 — so the mismatch was silently costing
+tracking quality all along. The serving win is a config change, not a new model. The model-size axis
 (a fine-tuned yolov8n) is the documented next point.
 
 The embedding core produced three headline findings — all measured:
