@@ -1,0 +1,215 @@
+{
+  "timestamp": "2026-07-30T18:56:04.093807+00:00",
+  "increment": "v2-retrieval-uncertainty",
+  "stage": "is the retrieval confidence signal calibrated? (selective prediction \u2014 end-to-end uncertainty)",
+  "encoder": {
+    "checkpoint": "weights/retrieve/trajectory_transformer_20260730T025617Z.pt",
+    "arch": "trajectory_transformer",
+    "corpus_fingerprint": "d8d9b2b0557cceba",
+    "git_sha": "d373a02d216dae4e8d511042127b1e6979913749"
+  },
+  "dataset": {
+    "n_gallery": 858,
+    "n_queries": 5148,
+    "val_games": [
+      "01.01.2016.NYK.at.CHI",
+      "01.02.2016.BKN.at.BOS",
+      "01.02.2016.HOU.at.SAS",
+      "01.02.2016.NOP.at.DAL"
+    ],
+    "queries": "jitter/crop/mirror augmentations + id_swap{1,2,4} \u2014 a corruption sweep"
+  },
+  "overall_accuracy@1": 0.8225,
+  "confidence_signals": {
+    "margin": {
+      "calibration": {
+        "bins": [
+          {
+            "bin": 0,
+            "n": 781,
+            "mean_conf": 0.045,
+            "accuracy": 0.315
+          },
+          {
+            "bin": 1,
+            "n": 536,
+            "mean_conf": 0.147,
+            "accuracy": 0.554
+          },
+          {
+            "bin": 2,
+            "n": 569,
+            "mean_conf": 0.251,
+            "accuracy": 0.849
+          },
+          {
+            "bin": 3,
+            "n": 638,
+            "mean_conf": 0.352,
+            "accuracy": 0.928
+          },
+          {
+            "bin": 4,
+            "n": 791,
+            "mean_conf": 0.452,
+            "accuracy": 0.992
+          },
+          {
+            "bin": 5,
+            "n": 777,
+            "mean_conf": 0.548,
+            "accuracy": 0.999
+          },
+          {
+            "bin": 6,
+            "n": 559,
+            "mean_conf": 0.649,
+            "accuracy": 0.998
+          },
+          {
+            "bin": 7,
+            "n": 344,
+            "mean_conf": 0.748,
+            "accuracy": 1.0
+          },
+          {
+            "bin": 8,
+            "n": 138,
+            "mean_conf": 0.836,
+            "accuracy": 1.0
+          },
+          {
+            "bin": 9,
+            "n": 15,
+            "mean_conf": 0.939,
+            "accuracy": 1.0
+          }
+        ],
+        "ece": 0.4313,
+        "confidence_correctness_corr": 0.5708
+      },
+      "selective_accuracy_vs_coverage": [
+        {
+          "coverage": 1.0,
+          "n": 5148,
+          "accuracy": 0.822
+        },
+        {
+          "coverage": 0.75,
+          "n": 3861,
+          "accuracy": 0.961
+        },
+        {
+          "coverage": 0.5,
+          "n": 2574,
+          "accuracy": 0.997
+        },
+        {
+          "coverage": 0.25,
+          "n": 1287,
+          "accuracy": 0.999
+        }
+      ]
+    },
+    "top1_similarity": {
+      "calibration": {
+        "bins": [
+          {
+            "bin": 0,
+            "n": 15,
+            "mean_conf": 0.046,
+            "accuracy": 0.133
+          },
+          {
+            "bin": 1,
+            "n": 77,
+            "mean_conf": 0.156,
+            "accuracy": 0.091
+          },
+          {
+            "bin": 2,
+            "n": 179,
+            "mean_conf": 0.251,
+            "accuracy": 0.151
+          },
+          {
+            "bin": 3,
+            "n": 246,
+            "mean_conf": 0.349,
+            "accuracy": 0.232
+          },
+          {
+            "bin": 4,
+            "n": 289,
+            "mean_conf": 0.449,
+            "accuracy": 0.304
+          },
+          {
+            "bin": 5,
+            "n": 302,
+            "mean_conf": 0.548,
+            "accuracy": 0.457
+          },
+          {
+            "bin": 6,
+            "n": 282,
+            "mean_conf": 0.655,
+            "accuracy": 0.78
+          },
+          {
+            "bin": 7,
+            "n": 356,
+            "mean_conf": 0.751,
+            "accuracy": 0.879
+          },
+          {
+            "bin": 8,
+            "n": 511,
+            "mean_conf": 0.854,
+            "accuracy": 0.977
+          },
+          {
+            "bin": 9,
+            "n": 2891,
+            "mean_conf": 0.978,
+            "accuracy": 0.997
+          }
+        ],
+        "ece": 0.0625,
+        "confidence_correctness_corr": 0.7399
+      },
+      "selective_accuracy_vs_coverage": [
+        {
+          "coverage": 1.0,
+          "n": 5148,
+          "accuracy": 0.822
+        },
+        {
+          "coverage": 0.75,
+          "n": 3861,
+          "accuracy": 0.98
+        },
+        {
+          "coverage": 0.5,
+          "n": 2574,
+          "accuracy": 0.998
+        },
+        {
+          "coverage": 0.25,
+          "n": 1287,
+          "accuracy": 0.999
+        }
+      ]
+    }
+  },
+  "notes": "Confidence = top1-top2 margin (and top-1 sim), model-free. A positive confidence/correctness correlation + accuracy RISING as coverage falls means the signal is trustworthy -> the pipeline can abstain when unsure. Correctness label = top-1 is the query's own source (augmentation-SSL relevant).",
+  "provenance": {
+    "seed": 13,
+    "device": "cpu",
+    "versions": {
+      "torch": "2.13.0",
+      "numpy": "2.3.5"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}

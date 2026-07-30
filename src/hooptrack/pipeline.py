@@ -68,11 +68,24 @@ class Pipeline:
     reid: ReID | None = None
 
     def run(self, frames) -> TrackResult:
-        """broadcast frames -> tracks (in image coords; court coords + identity added in V1)."""
+        """broadcast frames -> tracks (in image coords; court coords + identity added in V1). Records per-stage
+        wall-clock in meta['timings'] (cheap; used by the serving observability layer and any latency report)."""
+        import time
+
+        timings: dict[str, float] = {}
+        t = time.perf_counter()
         dets = self.detector.detect(frames)
+        timings["detect_s"] = round(time.perf_counter() - t, 4)
+        t = time.perf_counter()
         tracks = self.tracker.track(dets, frames)
+        timings["track_s"] = round(time.perf_counter() - t, 4)
         if self.cfg.homography.enabled and self.homography is not None:
+            t = time.perf_counter()
             tracks = self.homography.project(tracks, frames)
+            timings["homography_s"] = round(time.perf_counter() - t, 4)
         if self.cfg.reid.enabled and self.reid is not None:
+            t = time.perf_counter()
             tracks = self.reid.identify(tracks, frames)
-        return TrackResult(tracks=tracks, meta={"n_ids": len({t.track_id for t in tracks})})
+            timings["reid_s"] = round(time.perf_counter() - t, 4)
+        return TrackResult(tracks=tracks, meta={"n_ids": len({t.track_id for t in tracks}),
+                                                "n_dets": len(dets), "timings": timings})

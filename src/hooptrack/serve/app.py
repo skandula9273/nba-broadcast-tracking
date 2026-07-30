@@ -4,7 +4,8 @@ frames via `ingest.extract_frames`) or a prepared **MOT sequence dir**.
 
 Honest scope: only **detect -> track** is wired. Homography and re-ID are disabled (the pipeline is built
 with `homography=None, reid=None`), so each track's `court_xy` and `player_id` are null — these are 2D
-image-box tracks, NOT top-down "moving dots". `/health` is a liveness check.
+image-box tracks, NOT top-down "moving dots". `/health` is a liveness check; `/metrics` returns rolling
+serving observability (per-stage latency percentiles, throughput, a detections/frame drift signal — V2).
 
 Detector via env `HOOPTRACK_CONFIG` (default `configs/v0_finetuned_640.yaml` -> the fine-tuned athlete detector
 at imgsz 640, the measured Pareto-optimal operating point: peak mAP 0.987 / HOTA 0.525 / ~25 fps, beating the
@@ -20,8 +21,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from .observability import Metrics
+
 app = FastAPI(title="hooptrack")
 _PIPELINE = None  # (Config, Pipeline) built once on the first /track call
+_METRICS = Metrics()  # rolling serving metrics fed by /track, exposed at /metrics (V2 observability)
 
 
 class TrackRequest(BaseModel):
@@ -61,6 +65,12 @@ def health() -> dict:
     return {"status": "ok"}
 
 
+@app.get("/metrics")
+def metrics() -> dict:
+    """Rolling serving observability: per-stage latency percentiles, throughput, detections/frame baseline."""
+    return _METRICS.summary()
+
+
 @app.post("/track")
 def track(req: TrackRequest) -> dict:
     import tempfile
@@ -90,6 +100,9 @@ def track(req: TrackRequest) -> dict:
         from ..detect.ball import BallDetector
         ball_by_frame = BallDetector(device=cfg.detect.device, conf=cfg.detect.ball_conf,
                                      imgsz=cfg.detect.imgsz).detect(seq)
+
+    timings = result.meta.get("timings", {})   # per-stage wall-clock -> observability (/metrics) + drift verdict
+    drift = _METRICS.record(len(seq), timings, len(result.tracks), result.meta.get("n_dets", 0))
     return {
         "sequence": seq.name,
         "source": source_kind,
@@ -100,6 +113,7 @@ def track(req: TrackRequest) -> dict:
             "tracker": cfg.track.method,
             "homography_enabled": cfg.homography.enabled, "reid_enabled": cfg.reid.enabled,
         },
+        "timings_s": timings, "drift": drift,
         "n_ids": result.meta.get("n_ids"),
         "n_tracks": len(result.tracks),
         "analytics": analytics(result, ball_by_frame),   # true possessions if ball on; else spacing + phases

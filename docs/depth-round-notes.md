@@ -684,6 +684,35 @@ auto-registers a frame -> `court_xy`.
   labeled broadcast set (SoccerNet jersey GT) and will sit below the synthetic ceiling, but the
   resolution-is-sufficient conclusion is robust (real heights >> the resolution-limited regime).
 
+### V2 end-to-end uncertainty — the retrieval confidence signal is CALIBRATED → selective prediction works (2026-07-30)
+- **The upside:** a retrieval system is only production-useful if it can say "I'm not sure." So: is a cheap,
+  model-free confidence signal trustworthy? `retrieve/uncertainty.py` (`make retrieve-uncertainty`) sweeps a
+  corruption range (clean augmentations → id-swaps) as queries against the clean val gallery (correct@1 =
+  top-1 is the query's own source), and measures calibration + the accuracy-vs-coverage tradeoff, on a saved
+  checkpoint (same model as the retrieval/degradation artifacts).
+- **Result (5,148 queries, overall acc@1 0.822):** the **top-1 cosine similarity is well-calibrated** —
+  confidence/correctness correlation **0.74**, ECE **0.063** — and **selective prediction works**: answer only
+  the most-confident half → **0.997** accuracy, the confident quarter → **0.999**. The top1–top2 margin also
+  orders well (corr 0.57) but is worse-calibrated as a probability (ECE 0.43). So the pipeline can attach a
+  trustworthy confidence to each retrieval and **abstain when unsure, recovering 0.82 → ~1.0**.
+- **Why it matters / honest scope:** this is the concrete end-to-end-uncertainty upside — a real number, not a
+  hand-wave. Caveat: the correctness label is augmentation-SSL self-retrieval (the same instance-invariance the
+  recall number measures), so it certifies confidence *for that task*; a semantic-similarity confidence would
+  need the supervised encoder + labels. Measured and reported as-is.
+
+### V2 observability — real serving metrics + a drift signal, not a dashboard mock (2026-07-30)
+- **What:** `serve/observability.py` — an in-memory `Metrics` registry the `/track` handler feeds, exposed at a
+  new `/metrics` endpoint. `Pipeline.run` now records per-stage wall-clock in `meta['timings']` (cheap, always
+  on), so serving reports **per-stage latency percentiles** (p50/p95 detect vs track), **throughput**, and a
+  **detections-per-frame baseline** (Welford running mean/std). Each `/track` response carries its own
+  `timings_s` + a **drift verdict**: the z-score of this request's detections/frame vs the running baseline,
+  flagged beyond 3σ — the cheap honest proxy for input-distribution shift (a clip that suddenly detects far
+  fewer/more athletes than the norm is off-distribution).
+- **Honesty / edge case:** a unit test caught a real bug — a **zero-variance baseline** (identical detection
+  counts) made σ=0 so the z-score never flagged; fixed to treat any material deviation from a zero-variance
+  baseline as drift. Real, measured observability (latency/throughput/drift from actual `/track` calls), scoped
+  to what the deployed detect→track path actually exposes — not a mocked dashboard. +3 tests.
+
 ### Ball tracking — COCO 'sports ball', no training; measured ~24% coverage → true possessions where visible (2026-07-29)
 - **The gap:** single-class athlete detector has no ball, so analytics could only do spacing/phases — true
   possessions/shots need ball control. The pragmatic path needs **no new training**: COCO yolov8m already has a

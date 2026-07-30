@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto detect-export-bench track eval serve serve-bench retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl retrieve-uncertainty setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -25,6 +25,9 @@ detect-generalization:  ## per-game detection mAP breakdown (cross-game generali
 
 detect-pareto:  ## detector accuracy-latency Pareto over inference imgsz (V2 serving frontier) -> detector_pareto_*.json
 	python -m hooptrack.detect.pareto
+
+detect-export-bench:  ## V2 inference-format opt: PyTorch vs ONNX vs CoreML latency/mAP -> inference_format_*.json
+	python -m hooptrack.detect.export_bench
 
 detect-eval:  ## detection mAP on the fine-tuned weights -> eval_results/detection_*.json (increment-04)
 	python -m hooptrack.detect.eval --config configs/v0_finetuned.yaml
@@ -67,6 +70,9 @@ retrieve-semantic-validate:  ## VALIDATE semantic retrieval — supervised (SupC
 
 retrieve-nl:  ## NL play query demo — text -> semantic constraints -> matching possessions (structured, no LLM)
 	python -m hooptrack.retrieve.nl_query
+
+retrieve-uncertainty:  ## V2 retrieval uncertainty: is confidence calibrated? selective prediction (needs a checkpoint)
+	python -m hooptrack.retrieve.uncertainty --checkpoint $$(ls -t weights/retrieve/*.pt | head -1) --device cpu
 
 setarch-capacity:  ## capacity-matched set-arch d64 vs d128 crop recall. GPU: DEVICE=cuda EPOCHS=150 make setarch-capacity
 	python -m hooptrack.retrieve.setarch_capacity --epochs $(or $(EPOCHS),60) --device $(or $(DEVICE),cpu)
