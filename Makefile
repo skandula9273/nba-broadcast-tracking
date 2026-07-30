@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval detect-generalization track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto track eval serve retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
 .DEFAULT_GOAL := help
 
 help:  ## show this help
@@ -22,6 +22,9 @@ ball-eval:  ## COCO 'sports ball' coverage on SportsMOT (no training) -> eval_re
 
 detect-generalization:  ## per-game detection mAP breakdown (cross-game generalization) -> detection_generalization_*.json
 	python -m hooptrack.detect.eval_generalization
+
+detect-pareto:  ## detector accuracy-latency Pareto over inference imgsz (V2 serving frontier) -> detector_pareto_*.json
+	python -m hooptrack.detect.pareto
 
 detect-eval:  ## detection mAP on the fine-tuned weights -> eval_results/detection_*.json (increment-04)
 	python -m hooptrack.detect.eval --config configs/v0_finetuned.yaml

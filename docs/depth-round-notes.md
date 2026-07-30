@@ -699,6 +699,25 @@ auto-registers a frame -> `court_xy`.
   faked). The honest bound: a *quarter*-coverage ball supports partial possession analytics; robust ball
   tracking needs a basketball-specific detector + annotations. Reported as-is.
 
+### Detector accuracy-latency Pareto (V2 first step) — the deployed imgsz is DOMINATED (2026-07-30)
+- **What:** the first real V2 step — turn the serving *baseline* (one point) into a measured *frontier* by
+  sweeping the deployed detector's inference **imgsz** (a zero-retraining live knob). `detect/pareto.py`
+  (`make detect-pareto`) measures (mAP@50, detection fps) at imgsz {1280, 960, 640, 480} on the fine-tuned
+  yolov8m; only imgsz varies.
+- **Result — the deployed imgsz 1280 is strictly DOMINATED:**
+  1280 → mAP 0.967 @ 10.2 fps · 960 → 0.979 @ 18.0 · **640 → 0.987 @ 26.5** · **480 → 0.977 @ 35.9**. Frontier =
+  {640, 480}. imgsz **640 beats 1280 on BOTH axes** (higher mAP *and* 2.6× fps), and 960 dominates 1280 too.
+- **Why (the actionable finding):** the model was fine-tuned at imgsz 640, so inferring at 1280 is a
+  **train/infer resolution mismatch** that costs accuracy *and* burns 4× the pixels for it. The committed
+  headline mAP **0.987 was the 640 number**, but the deployed tracking pipeline infers at **1280 (0.967)** — so
+  the deployment has been running at a slower, *less* accurate, Pareto-dominated point. The Pareto surfaced that
+  inconsistency. **Recommendation:** deploy at imgsz 640 (free +2 pts mAP and 2.6× speed → ~26 fps, near
+  real-time) or 480 (>30 fps for ~1 pt). Applying the switch means re-measuring HOTA at the new imgsz — the
+  documented follow-up, not silently changed here.
+- **Honest scope:** one variable (imgsz) on one fixed model. The model-SIZE axis (a fine-tuned yolov8n) is a
+  separate knob needing its own matched fine-tune — the next point, not faked. A frontier from a real knob that
+  *changed the deployment recommendation* is a better V2 first step than a hand-drawn accuracy-latency curve.
+
 ### Serving latency baseline — the missing operating point for the V2 Pareto (2026-07-29)
 - **Why:** "serving optimization + Pareto frontier" is the headline V2 item, but there was no *before* number —
   you can't build a Pareto without a baseline on the real hardware. `serve/bench.py` (`make serve-bench`) times

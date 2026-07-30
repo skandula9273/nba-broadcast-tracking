@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-07-30T03:49:27.591605+00:00",
+  "increment": "v2-detector-pareto",
+  "stage": "detector accuracy-latency Pareto over inference imgsz (V2 serving-optimization first step)",
+  "detector": {
+    "weights": "weights/finetuned/best.pt",
+    "arch": "yolov8m (fine-tuned, class 'athlete')",
+    "n_params": 25856899,
+    "weight_mb": 52.0,
+    "device": "mps",
+    "note": "one variable = inference imgsz; a zero-retraining live knob"
+  },
+  "bench": {
+    "sequence": "v_00HRwkvvjtQ_c007",
+    "frames_timed": 120,
+    "warmup": 8,
+    "mAP_split": "SportsMOT basketball-val (YOLO labels, class athlete)"
+  },
+  "points": [
+    {
+      "name": "yolov8m_ft@1280",
+      "imgsz": 1280,
+      "mAP50": 0.9668,
+      "fps": 10.17,
+      "ms_per_frame": 98.32,
+      "on_frontier": false
+    },
+    {
+      "name": "yolov8m_ft@960",
+      "imgsz": 960,
+      "mAP50": 0.9792,
+      "fps": 18.04,
+      "ms_per_frame": 55.44,
+      "on_frontier": false
+    },
+    {
+      "name": "yolov8m_ft@640",
+      "imgsz": 640,
+      "mAP50": 0.9872,
+      "fps": 26.54,
+      "ms_per_frame": 37.68,
+      "on_frontier": true
+    },
+    {
+      "name": "yolov8m_ft@480",
+      "imgsz": 480,
+      "mAP50": 0.9767,
+      "fps": 35.92,
+      "ms_per_frame": 27.84,
+      "on_frontier": true
+    }
+  ],
+  "frontier": [
+    "yolov8m_ft@640",
+    "yolov8m_ft@480"
+  ],
+  "notes": "Accuracy-latency frontier via the DEPLOYABLE resolution knob (no retraining to move along it). Deployed default is imgsz 1280. The model-SIZE axis (a fine-tuned yolov8n) is a separate knob needing its own matched fine-tune \u2014 the documented next point, not faked here. mAP at imgsz != 640 measures the inference-resolution effect (the model was fine-tuned at 640).",
+  "provenance": {
+    "versions": {
+      "ultralytics": "8.4.104",
+      "torch": "2.13.0"
+    },
+    "platform": "macOS-26.5.1-arm64-arm-64bit"
+  }
+}

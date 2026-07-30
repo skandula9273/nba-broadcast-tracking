@@ -103,9 +103,15 @@ detector fine-tune.
 
 **Serving latency baseline (`make serve-bench`, MPS):** the deployed `detect → track` path runs at
 **9.9 fps (101 ms/frame)** — **detection is 94% of it** (94.5 ms/frame, YOLOv8m @ imgsz 1280), tracking is
-~free (6.5 ms/frame, 155 fps). Below the 30 fps real-time bar (~33 ms/frame), so the V2 Pareto lever is the
-detector (imgsz / smaller model / quantization, trading mAP for fps); jersey-OCR re-ID is a separate, far
-heavier stage (easyocr, minutes/clip).
+~free (6.5 ms/frame, 155 fps); jersey-OCR re-ID is a separate, far heavier stage (easyocr, minutes/clip).
+
+**Detector accuracy–latency Pareto (V2 first step, `make detect-pareto`):** sweeping the detector's inference
+imgsz turns that baseline into a measured frontier — and shows the **deployed imgsz 1280 is Pareto-dominated**:
+imgsz **640 gives higher mAP (0.987 vs 0.967) AND 2.6× the fps (26.5 vs 10.2)**, because the model was
+fine-tuned at 640 (inferring at 1280 is a train/infer mismatch that costs both). Frontier = **640** (peak
+accuracy, ~26 fps near real-time) and **480** (0.977 mAP, ~36 fps). So the serving win is a config change, not
+a new model — deploy at 640 (re-measuring HOTA at the new imgsz is the follow-up). The model-size axis
+(a fine-tuned yolov8n) is the documented next point.
 
 The embedding core produced three headline findings — all measured:
 
