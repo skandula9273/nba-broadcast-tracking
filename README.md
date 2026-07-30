@@ -8,8 +8,10 @@ tracking demo:
 > **How much do downstream basketball analytics (play retrieval, shot quality) degrade when computed on
 > CV-reconstructed tracking versus ground-truth tracking — and which perception errors matter most?**
 
-`hooptrack` is a placeholder name. See `docs/design-doc.md` for the full spec and engineering contract (with
-dated amendments) and `docs/depth-round-notes.md` for the decision log. Status: **V1 substantially complete.**
+`hooptrack` is a placeholder name. **Read `docs/writeup.md` first** — the single-document synthesis (the three
+findings, the numbers, the honest real/simulated/gated map). See `docs/design-doc.md` for the full spec and
+engineering contract (with dated amendments) and `docs/depth-round-notes.md` for the blow-by-blow decision log.
+Status: **V1 substantially complete.**
 V0 (detection + tracking + eval harness) is done and floors locked. The embedding core, FAISS index, degradation
 study, order-robustness study, and a permutation-invariant encoder are done; the perception stages (homography
 keypoint front-end, re-ID + jersey OCR, ball, analytics) are built and measured; and the **real tracker output
