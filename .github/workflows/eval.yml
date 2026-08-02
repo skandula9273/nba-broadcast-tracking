@@ -19,5 +19,7 @@ jobs:
         run: ruff check src tests
       - name: Tests
         run: pytest -q
+      - name: Numbers consistency (README claims vs eval_results/ artifacts)
+        run: python -m hoopvec.eval.check_numbers   # docs/numbers_manifest.yaml; fails on README/artifact drift
       # As stages land, add the cheap retrieval eval here so every PR reports recall@k deltas
       # (mirrors the SEC 'eval-as-CI' next-level move). HOTA needs data+GPU -> run out-of-band, commit JSON.

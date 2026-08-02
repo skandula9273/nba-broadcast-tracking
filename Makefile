@@ -1,4 +1,4 @@
-.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto detect-export-bench onnx-providers track eval serve serve-bench retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl retrieve-uncertainty demo setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench test fmt lint
+.PHONY: help install lock data detect detect-eval ball-eval detect-generalization detect-pareto detect-export-bench onnx-providers track eval serve serve-bench retrieve-corpus retrieve-floor retrieve-train retrieve-study retrieve-end2end retrieve-bcast-encoder retrieve-oneclip retrieve-semantic retrieve-semantic-validate retrieve-nl retrieve-uncertainty demo setarch-capacity homography-frontend homography-detector jersey-eval jersey-eval-tracker jersey-eval-stitch jersey-accuracy serve-bench check-numbers test fmt lint
 .DEFAULT_GOAL := help
 
 # Tools resolve to the project virtualenv, NOT whatever `python`/`pip` is first on PATH (that would be the
@@ -112,6 +112,9 @@ jersey-eval-stitch:  ## jersey-OCR coverage on tracker output WITH fragment stit
 
 jersey-accuracy:  ## jersey-OCR ACCURACY vs crop height (synthetic labels) -> eval_results/jersey_accuracy_*.json
 	$(PY) -m hoopvec.reid.eval_jersey_accuracy
+
+check-numbers:  ## verify every README number still matches its eval_results/ source (docs/numbers_manifest.yaml)
+	$(PY) -m hoopvec.eval.check_numbers
 
 test:  ## run the test suite
 	$(PYTEST) -q

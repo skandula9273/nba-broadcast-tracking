@@ -9,7 +9,7 @@ similarity retrieval, and wrap both in a measured, reproducible eval platform.**
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 [![Lint: ruff](https://img.shields.io/badge/lint-ruff-261230.svg)](https://github.com/astral-sh/ruff)
-![Tests](https://img.shields.io/badge/tests-106%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-115%20passing-brightgreen.svg)
 
 *The point is the eval rigor and an honest research question — not a tracking demo.*
 
@@ -53,7 +53,7 @@ Three measured findings from the embedding core — the intellectual core of the
    lifts held-out-game semantic precision@5 to **0.942**. The headline recall@1 0.98 is instance-invariance,
    *not* semantic similarity — a distinction stated everywhere it matters.
 
-**Status: V1 substantially complete + V2 upside measured.** 56 sole-author commits, **106 tests**. Every number
+**Status: V1 substantially complete + V2 upside measured.** 56 sole-author commits, **115 tests**. Every number
 below is a committed, timestamped JSON in [`eval_results/`](eval_results/); the eval harness and the FastAPI
 service call the *same* `pipeline.py`, so the numbers describe the deployed system.
 
@@ -235,7 +235,7 @@ coordinates (no broadcast homography). Both the eval harness and `serve` call `p
 ```bash
 python3.11 -m venv .venv   # the make targets use .venv/bin/python (see note below)
 make install               # deps into .venv (+ TrackEval from git)
-make test                  # the real metric tests (106 passing)
+make test                  # the real metric tests (115 passing)
 make demo                  # the honest walkthrough
 make eval                  # tracking eval harness -> eval_results/*.json
 
@@ -278,7 +278,7 @@ src/hoopvec/
   demo.py         # the honest walkthrough
 eval_results/     # committed timestamped JSON per run
 docs/             # writeup.md · design-doc.md · depth-round-notes.md · increment-0N-*.md
-tests/            # 106 CI-safe tests (real metric logic)
+tests/            # 115 CI-safe tests (real metric logic)
 ```
 
 Depth concentrates in `retrieve/` (the embedding core) and the degradation study; the perception stages are

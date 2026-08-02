@@ -1,0 +1,424 @@
+# Numbers manifest — maps every quantitative README claim to its source-of-truth artifact.
+# Checked by `make check-numbers` (src/hoopvec/eval/check_numbers.py) locally and in CI.
+#
+# Each `claims` entry:
+#   id       : unique label
+#   anchors  : exact README substrings that must ALL still be present (catches a silently-edited number)
+#   artifact : the eval_results/*.json that produces the value (a SPECIFIC run == which run is cited)
+#   path     : slash-separated JSON path; integer segments index lists  (e.g. results/sweeps/id_swap/4/...)
+#              (slash, not dot — artifact keys like "coverage@0.25" contain dots)
+#   derived  : instead of `path`, a computed value: {op: divide|subtract, of: <path>, by: <path>}
+#   display  : the number as the README shows it
+#   tol      : abs tolerance |artifact*scale - display| <= tol
+#   scale    : optional multiplier applied to the artifact value before compare (100 for %, 1e-6 for M)
+#   pin_reason: this claim deliberately cites a NON-latest run of its family (suppresses the stale-family
+#              fail and documents WHY — an honest older-run citation, not staleness)
+#
+# `exempt`  : quantitative README numbers that are deliberately NOT eval_results-backed. Present-checked,
+#             never value-checked. This list doubles as the audit's "unsourced, acknowledged" register.
+# `ignore_patterns`: regexes for non-metric numbers (dates, versions, resolutions, structural counts) so the
+#             unsourced audit doesn't drown in noise. Anything NOT covered by a claim/exempt/ignore is flagged.
+
+readme: README.md
+artifacts_dir: eval_results
+
+claims:
+  # ---- Detection ----------------------------------------------------------------------------------------
+  - id: detection_map50
+    anchors: ["mAP@50 **0.987**"]
+    artifact: detection_20260728T203041Z.json
+    path: results/detection_mAP50
+    display: 0.987
+    tol: 0.001
+  - id: detgen_min
+    anchors: ["per-game 0.970–0.991 (std 0.009)"]
+    artifact: detection_generalization_20260729T210001Z.json
+    path: spread_mAP50/min
+    display: 0.970
+    tol: 0.001
+  - id: detgen_max
+    anchors: ["per-game 0.970–0.991 (std 0.009)"]
+    artifact: detection_generalization_20260729T210001Z.json
+    path: spread_mAP50/max
+    display: 0.991
+    tol: 0.001
+  - id: detgen_std
+    anchors: ["(std 0.009)"]
+    artifact: detection_generalization_20260729T210001Z.json
+    path: spread_mAP50/std
+    display: 0.009
+    tol: 0.001
+
+  # ---- Tracking (HOTA). 0.301/0.473 are historical progression endpoints — protected via the anchor
+  #      (editing any of them breaks the exact string); only the current 0.525 is value-checked. ----------
+  - id: hota_current
+    anchors: ["**0.301 → 0.473 → 0.525**", "HOTA 0.473 → 0.525"]
+    artifact: eval_20260730T120110Z.json
+    path: results/tracking/HOTA
+    display: 0.525
+    tol: 0.001
+
+  # ---- Homography ---------------------------------------------------------------------------------------
+  - id: homography_floor_px
+    anchors: ["503px floor → **16px**", "**503px floor → 16px median**"]
+    artifact: court_keypoints_floor_20260728T215914Z.json
+    path: results/trivial_floor_global_mean_keypoints_px/median_px
+    display: 503
+    tol: 1.0
+  - id: homography_detector_px
+    anchors: ["503px floor → **16px**", "keypoint net (16px on arenas)", "**503px floor → 16px median**"]
+    artifact: court_keypoints_detector_20260729T112703Z.json
+    path: results/detector_val_reproj_median_px
+    display: 16
+    tol: 1.0
+
+  # ---- Ball ---------------------------------------------------------------------------------------------
+  - id: ball_coverage_pct
+    anchors: ["**~24%** frame coverage", "COCO 'sports ball' ~24%", "~24% coverage"]
+    artifact: ball_coverage_20260729T203554Z.json
+    path: coverage/coverage@0.25
+    display: 24
+    tol: 0.6
+    scale: 100
+
+  # ---- Re-ID / jersey -----------------------------------------------------------------------------------
+  - id: jersey_gt_coverage
+    anchors: ["coverage **0.73** (GT)", "jersey coverage 0.73 (GT)"]
+    artifact: jersey_ocr_20260729T124430Z.json
+    path: results/band_noprep/track_coverage
+    display: 0.73
+    tol: 0.005
+  - id: jersey_gt_coverage_pct
+    anchors: ["**73%** of tracks"]
+    artifact: jersey_ocr_20260729T124430Z.json
+    path: results/band_noprep/track_coverage
+    display: 73
+    tol: 0.5
+    scale: 100
+  - id: jersey_hi_consensus_pct
+    anchors: ["(47% with ≥60% cross-frame agreement)"]
+    artifact: jersey_ocr_20260729T124430Z.json
+    path: results/band_noprep/hi_consensus_coverage
+    display: 47
+    tol: 0.5
+    scale: 100
+  - id: jersey_tracker_raw
+    anchors: ["**0.37→0.48**", "coverage halves to 0.365"]
+    artifact: jersey_ocr_tracker_20260729T145730Z.json
+    path: results/band_noprep/track_coverage
+    display: 0.365
+    tol: 0.005
+  - id: jersey_tracker_stitched
+    anchors: ["**0.37→0.48**", "recovers a third (→0.48, consensus"]
+    artifact: jersey_ocr_tracker_stitch_20260729T160140Z.json
+    path: results/band_noprep/track_coverage
+    display: 0.48
+    tol: 0.005
+  - id: jersey_n_tracks
+    anchors: ["949 tracker-ids for 150 players"]
+    artifact: jersey_ocr_20260729T124430Z.json
+    path: results/band_noprep/n_tracks
+    display: 150
+    tol: 0
+  - id: tracker_ids_raw
+    anchors: ["949 tracker-ids for 150 players"]
+    artifact: end2end_20260730T202954Z.json
+    path: results/stitch/n_ids_raw
+    display: 949
+    tol: 0
+  - id: jersey_median_height_px
+    anchors: ["real jersey heights (median 63px)"]
+    artifact: jersey_accuracy_20260729T204010Z.json
+    path: real_jersey_region_heights_px/p50
+    display: 63
+    tol: 0.5
+
+  # ---- Retrieval (instance) -----------------------------------------------------------------------------
+  - id: retrieval_floor
+    anchors: ["recall@1 floor **0.62 → 0.98**", "same-split floor is **0.62**"]
+    artifact: retrieval_trained_20260730T025617Z.json
+    path: results/floor_on_val/overall/recall@1
+    display: 0.62
+    tol: 0.005
+  - id: retrieval_trained
+    anchors: ["recall@1 floor **0.62 → 0.98**", "**0.62 → 0.98** (court-mirror", "headline recall@1 0.98"]
+    artifact: retrieval_trained_20260730T025617Z.json
+    path: results/trained_on_val/overall/recall@1
+    display: 0.98
+    tol: 0.005
+  - id: retrieval_mirror_floor
+    anchors: ["court-mirror 0.004 → 0.999"]
+    artifact: retrieval_trained_20260730T025617Z.json
+    path: results/floor_on_val/mirror/recall@1
+    display: 0.004
+    tol: 0.001
+  - id: retrieval_mirror_trained
+    anchors: ["court-mirror 0.004 → 0.999"]
+    artifact: retrieval_trained_20260726T142321Z.json
+    path: results/trained_on_val/mirror/recall@1
+    display: 0.999
+    tol: 0.001
+    pin_reason: >
+      Cites the 2026-07-26 run (mirror recall@1 0.9988 -> 0.999). The current checkpoint run
+      retrieval_trained_20260730T025617Z gives mirror 1.0 exactly. FLAG FOR REVIEW: repoint the README to 1.0
+      (cite the checkpoint run, consistent with 0.62/0.98/0.004), or keep this deliberate older-run citation.
+  - id: retrieval_crop_baseline
+    anchors: ["crop recall **0.94 → ~0.45**", "**0.94 → ~0.45–0.49**", "baseline keeps 0.94"]
+    artifact: retrieval_trained_20260730T025617Z.json
+    path: results/trained_on_val/crop/recall@1
+    display: 0.94
+    tol: 0.01
+  - id: retrieval_crop_setarch
+    anchors: ["**0.94 → ~0.45–0.49**"]
+    artifact: retrieval_trained_setarch_20260727T142424Z.json
+    path: results/trained_on_val/crop/recall@1
+    display: 0.49
+    tol: 0.02
+
+  # ---- Retrieval (semantic) -----------------------------------------------------------------------------
+  - id: semantic_supervised
+    anchors: ["supervised precision@5 **0.942**", "precision@5 to **0.942**", "**0.942** (vs floor 0.597)"]
+    artifact: semantic_validate_transition_20260729T200729Z.json
+    path: results_precision@5/supervised
+    display: 0.942
+    tol: 0.001
+  - id: semantic_ssl
+    anchors: ["SSL **0.513** ≈ random 0.496", "play-type axis (0.51)", "vs SSL 0.51 ≈ random"]
+    artifact: semantic_validate_transition_20260729T200729Z.json
+    path: results_precision@5/ssl
+    display: 0.513
+    tol: 0.001
+  - id: semantic_random
+    anchors: ["SSL **0.513** ≈ random 0.496"]
+    artifact: semantic_validate_transition_20260729T200729Z.json
+    path: results_precision@5/random
+    display: 0.496
+    tol: 0.001
+  - id: semantic_floor
+    anchors: ["(vs floor 0.597)"]
+    artifact: semantic_validate_transition_20260729T200729Z.json
+    path: results_precision@5/floor
+    display: 0.597
+    tol: 0.001
+
+  # ---- End-to-end wire + broadcast encoder --------------------------------------------------------------
+  - id: end2end_floor
+    anchors: ["floor r@1 **0.80**", "floor **recall@1 0.80**", "end2end: floor r@1 0.80"]
+    artifact: end2end_20260730T202954Z.json
+    path: results/reconstructed_vs_gt/recall@1
+    display: 0.80
+    tol: 0.005
+  - id: broadcast_floor
+    anchors: ["(0.86 → 0.88)"]
+    artifact: broadcast_encoder_20260729T202120Z.json
+    path: results/floor_recon_vs_gt/recall@1
+    display: 0.86
+    tol: 0.005
+  - id: broadcast_trained
+    anchors: ["(0.86 → 0.88)"]
+    artifact: broadcast_encoder_20260729T202120Z.json
+    path: results/trained_broadcast_recon_vs_gt/recall@1
+    display: 0.88
+    tol: 0.005
+
+  # ---- Serving. 9.9 is the deliberate before-figure (retired COCO/1280 run); 21.5 is the shipped one. ----
+  - id: serving_before_fps
+    anchors: ["**9.9 → 21.5 fps**", "9.9-fps baseline", "throughput **9.9 → 21.5 fps**"]
+    artifact: serving_latency_20260729T181319Z.json
+    path: end_to_end/fps
+    display: 9.9
+    tol: 0.05
+    pin_reason: >
+      The BEFORE figure: the retired COCO-weights / imgsz-1280 baseline, kept deliberately to make the Pareto
+      fix concrete ("9.9 -> 21.5"). The shipped number (serving_before -> serving_after) cites the newer run.
+  - id: serving_after_fps
+    anchors: ["**9.9 → 21.5 fps**", "throughput **9.9 → 21.5 fps**"]
+    artifact: serving_latency_20260802T175803Z.json
+    path: end_to_end/fps
+    display: 21.5
+    tol: 0.05
+
+  # ---- Uncertainty --------------------------------------------------------------------------------------
+  - id: uncertainty_corr
+    anchors: ["(corr 0.74, ECE 0.06)", "corr 0.74 / ECE 0.06"]
+    artifact: uncertainty_20260730T185604Z.json
+    path: confidence_signals/top1_similarity/calibration/confidence_correctness_corr
+    display: 0.74
+    tol: 0.005
+  - id: uncertainty_ece
+    anchors: ["(corr 0.74, ECE 0.06)", "corr 0.74 / ECE 0.06"]
+    artifact: uncertainty_20260730T185604Z.json
+    path: confidence_signals/top1_similarity/calibration/ece
+    display: 0.06
+    tol: 0.005
+  - id: uncertainty_selective
+    anchors: ["selective prediction 0.82 → ~1.0"]
+    artifact: uncertainty_20260730T185604Z.json
+    path: confidence_signals/top1_similarity/selective_accuracy_vs_coverage/0/accuracy
+    display: 0.82
+    tol: 0.005
+
+  # ---- Degradation study (the checkpointed "one model" run) ---------------------------------------------
+  - id: degrade_combined_trained
+    anchors: ["**0.68** (floor 0.99)", "**floor 0.99 vs trained 0.68**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/combined_realistic/trained/recall@1
+    display: 0.68
+    tol: 0.02
+  - id: degrade_combined_floor
+    anchors: ["(floor 0.99)", "**floor 0.99 vs trained 0.68**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/combined_realistic/floor/recall@1
+    display: 0.99
+    tol: 0.005
+  - id: degrade_reid_trained
+    anchors: ["to **0.27** once", "**0.27 (vs floor 0.89)**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/combined_realistic_with_reid/trained/recall@1
+    display: 0.27
+    tol: 0.005
+  - id: degrade_reid_floor
+    anchors: ["**0.27 (vs floor 0.89)**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/combined_realistic_with_reid/floor/recall@1
+    display: 0.89
+    tol: 0.005
+  - id: degrade_idswap4_floor
+    anchors: ["**floor 0.96 vs trained 0.43**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/sweeps/id_swap/4/floor/recall@1
+    display: 0.96
+    tol: 0.005
+  - id: degrade_idswap4_trained
+    anchors: ["**floor 0.96 vs trained 0.43**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/sweeps/id_swap/4/trained/recall@1
+    display: 0.43
+    tol: 0.01
+  - id: degrade_permute_floor
+    anchors: ["**floor 0.21 vs trained 0.02**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/reid_operating_point/permute_players/4/floor/recall@1
+    display: 0.21
+    tol: 0.005
+  - id: degrade_permute_trained
+    anchors: ["**floor 0.21 vs trained 0.02**"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: results/reid_operating_point/permute_players/4/trained/recall@1
+    display: 0.02
+    tol: 0.01
+  - id: reid_coverage_substantial
+    anchors: ["resolves ~0.56 of players"]
+    artifact: degradation_ckpt_20260730T025854Z.json
+    path: measured_budgets/reid_jersey/coverage_substantial
+    display: 0.56
+    tol: 0.02
+
+  # ---- Serving Pareto -----------------------------------------------------------------------------------
+  - id: pareto_map_640
+    anchors: ["higher mAP (0.987 vs 0.967)"]
+    artifact: detector_pareto_20260730T152744Z.json
+    path: points/2/mAP50
+    display: 0.987
+    tol: 0.001
+  - id: pareto_map_1280
+    anchors: ["higher mAP (0.987 vs 0.967)"]
+    artifact: detector_pareto_20260730T152744Z.json
+    path: points/0/mAP50
+    display: 0.967
+    tol: 0.001
+  - id: pareto_yolov8n_fps
+    anchors: ["frontier at 44.7 fps"]
+    artifact: detector_pareto_20260730T152744Z.json
+    path: points/4/fps
+    display: 44.7
+    tol: 0.1
+  - id: pareto_yolov8n_params
+    anchors: ["**yolov8n** (3.0M params, 6 MB)"]
+    artifact: detector_pareto_20260730T152744Z.json
+    path: points/4/n_params
+    display: 3.0
+    tol: 0.1
+    scale: 0.000001
+  - id: pareto_yolov8n_mb
+    anchors: ["(3.0M params, 6 MB)"]
+    artifact: detector_pareto_20260730T152744Z.json
+    path: points/4/weight_mb
+    display: 6
+    tol: 0.5
+  - id: pareto_speedup_fps
+    anchors: ["AND 2.6× the fps"]
+    artifact: detector_pareto_20260730T034927Z.json
+    derived: {op: divide, of: points/2/fps, by: points/0/fps}
+    display: 2.6
+    tol: 0.1
+    pin_reason: >
+      The 2.6x fps figure is from the 2026-07-30T03:49 pareto run (640 fps 26.54 / 1280 fps 10.17 = 2.61).
+      The later T15:27 run measured slightly different MPS timings (24.76/10.55 = 2.35x); the README quotes 2.6.
+
+  # ---- Inference format (ONNX / CoreML EP) --------------------------------------------------------------
+  - id: onnx_coreml_ms
+    anchors: ["**17.7 ms — 2.5× faster than MPS PyTorch**"]
+    artifact: onnx_providers_20260730T202640Z.json
+    path: results/onnx_coreml/ms_per_forward
+    display: 17.7
+    tol: 0.05
+  - id: onnx_coreml_speedup
+    anchors: ["CoreML EP 2.5× faster than MPS", "2.5× faster than MPS PyTorch"]
+    artifact: onnx_providers_20260730T202640Z.json
+    path: results/onnx_coreml/speedup_vs_torch_mps
+    display: 2.5
+    tol: 0.05
+
+  # ---- Counts not held by eval_results, but still verified by a command (so they can't drift silently). --
+  # Test count uses grep (exact == pytest's count while there is no @parametrize; fast, no torch import).
+  - id: test_count
+    anchors: ["**115 tests**", "tests-115%20passing", "115 passing", "115 CI-safe tests"]
+    command: "grep -rh 'def test_' tests | wc -l"
+    display: 115
+    tol: 0
+
+# Quantitative README numbers deliberately NOT backed by an eval_results metric. Present-checked only.
+# This IS the "unsourced but acknowledged" register — review it; some are real findings (see the checker output).
+exempt:
+  - anchors: ["56 sole-author commits"]
+    reason: >
+      git commit count — not eval_results-backed AND structurally un-checkable: it changes on EVERY commit, so
+      a hardcoded value can't stay consistent (enforcing it would fail CI on any commit that didn't bump it).
+      FINDING: this value is stale (README says 56; `git rev-list --count HEAD` is far higher). RECOMMENDATION:
+      drop the specific number from the README, or accept it as approximate. Present-checked only, never valued.
+  - anchors: ["0.32–0.87"]
+    reason: "re-ID appearance-cosine spread — prose from reid/identify.py, not a committed metric JSON."
+  - anchors: ["**0.41 → 0.98**", "0.41 was on a corpus"]
+    reason: "The WITHDRAWN 0.41 headline — the README explicitly documents it as wrong (duplicated-corpus bug); kept as a corrected-in-place note, not a live claim."
+  - anchors: ["~0.94–1.0 at real jersey heights (median 63px)"]
+    reason: "jersey-OCR accuracy is a curve across heights (jersey_accuracy_*.json); ~0.94-1.0 is a range summary, not one field. 63px IS value-checked."
+  - anchors: ["hand-clicked homography (~30 ft off)"]
+    reason: "inc-10 one-clip homography error — documented in docs/increment-10-end-to-end.md, not a metric JSON."
+  - anchors: ["matches=320", "matches=251"]
+    reason: "demo transcript (docs/demo-output.txt) NL-query match counts — a demo artifact, not an eval_results metric."
+  - anchors: ["confidence=0.903", "confidence=0.643"]
+    reason: "demo transcript per-query confidences (docs/demo-output.txt), not an eval_results metric."
+
+# Non-metric numbers the unsourced audit should skip (dates, versions, resolutions, structural counts).
+ignore_patterns:
+  - '20\d\d'                          # years / dates (2026-07-29, 2015-16)
+  - '3\.11'                           # python version
+  - 'AGPL-3'                          # license id
+  - '\b(1280|960|640|480|288|384)\b'  # detector inference resolutions (config knob, not a metric)
+  - '@\d'                             # metric-@-k suffixes: recall@1, precision@5, r@10, id_swap indices
+  - 'top-\d'                          # top-k
+  - '\bV\d\b'                         # milestone labels V0/V1/V2
+  - '\dD\b'                           # 2D / 3D
+  - 'IDF\d'                           # tracking metric name IDF1
+  - 'inc-\d'                          # increment references
+  - 'increment-\d'
+  - 'id_swap=\d'                      # a degradation-sweep severity label
+  - 'Basketball-\d'                   # dataset name Basketball-51
+  - '\d+ of \d+'                      # "~4 of 10" structural
+  - '\d+ players'                     # "150 players" is anchored; catch other "N players" prose
+  - '\d\. \*\*'                       # numbered highlight list markers "1. **", "2. **", "3. **"
+  - 'yolov8'                          # model names
+  - 'resnet\d'
+  - 'v0'                              # config names (v0.yaml, v0_finetuned_640)
+  - 'five-minute'
