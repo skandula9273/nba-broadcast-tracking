@@ -848,6 +848,69 @@ auto-registers a frame -> `court_xy`.
   is sub-ms and not the serving cost. This is a baseline to optimize against, stated as such — the number is
   config-bound (imgsz 1280 is deliberately large for accuracy), which is exactly the knob V2 would sweep.
 
+### Docs reconciled — the writeup was the first thing a reader saw, and it had gone stale (2026-08-02)
+- **The catch:** the README tells readers "read `docs/writeup.md` first," so the writeup was the document a
+  reviewer opened *first* — and it had drifted: it still framed the ONNX export as an "honest negative" (already
+  overturned by the CoreML-EP result) and reported the wrong test count.
+- **Outcome:** reconciled every writeup figure against the committed JSON (a claim/value/artifact table before
+  editing prose — never adjust a number to fit the story). **Decision: the writeup is now explicitly the
+  NARRATIVE synthesis and defers to the README table + `eval_results/` as the numbers of record**, so it can't
+  silently compete as a source of truth and re-drift.
+- **Tradeoff:** keeps the "read the writeup first" on-ramp (the argument-in-order is the better front door for a
+  reviewer) while making drift non-fatal there. This is the failure that motivated the numbers checker below.
+
+### Serving number re-measured against the DEPLOYED config — the published fps described a retired one (2026-08-02)
+- **The catch:** the committed serving baseline (9.9 fps) was measured with **COCO yolov8m @ imgsz 1280** — but
+  the Pareto work had retired 1280 and moved the serve default to the fine-tuned detector @ **imgsz 640**. So the
+  README published a number for a config the repo no longer runs, one row above the finding that retired it. Root
+  cause: `serve/bench.py` still defaulted `--config` to `configs/v0.yaml` while `serve/app.py` shipped the 640 one.
+- **Outcome:** re-benched the actual deployed default → **measured end-to-end 21.49 fps** (detect 40.9 ms, track
+  5.6 ms), committed a fresh timestamped artifact with full provenance. README + writeup now read **9.9 → 21.5
+  fps**, keeping 9.9 as the *before* figure so the Pareto fix is concrete. Fixed `bench.py`'s default to the
+  deployed config so the bench and the service can't diverge again.
+- **Alternatives:** report the arithmetic estimate (~21 fps from 40.9 + 6.5 ms). Rejected — an estimate is not a
+  measurement, and a "measured platform" shouldn't put arithmetic in the README.
+- **Tradeoff / lesson:** a committed number must describe what you *ship*. The bug wasn't a wrong number — it was
+  a right number measured on a config the deployment had moved off, the subtle kind.
+
+### Renamed hooptrack → hoopvec — the name described the least-interesting layer (2026-08-02)
+- **The choice:** the repo (`nba-broadcast-tracking`) and package (`hooptrack`, carrying a "placeholder name"
+  disclaimer in a job-application README) both named *tracking* — the enabler — while the centerpiece is the
+  play-embedding / retrieval core. Renamed to **hoopvec**; the `track → vec` swap records the thesis (the project
+  moved from tracking to embeddings). Dropped the disclaimer.
+- **Blast-radius analysis first (the actual work):** `src/` uses **only relative imports** (zero absolute
+  `from hooptrack`), so renaming the package dir couldn't break the import graph — the 200+ string hits were
+  mechanical, not risky. Repo-name and package-name are decoupled (GitHub redirects the old URL); the env var kept
+  a back-compat read of the old `HOOPTRACK_CONFIG`.
+- **Outcome:** `git mv` (history preserved) + find/replace + pyproject + badge URL; verified `import hoopvec`,
+  `python -m hoopvec.*`, ruff, full suite. A moved venv wasn't relocatable (absolute shebangs), so I repointed its
+  scripts and then routed every Makefile target through `$(PY) = .venv/bin/python` — which also fixed `make test`
+  / `make serve-bench` silently running under the wrong (miniconda) interpreter.
+- **What I'd do differently:** nothing on the method — measuring the blast radius before touching anything is why
+  a 200-hit rename was a mechanical change instead of a risky one.
+
+### Numbers-consistency checker — made README↔artifact drift impossible to SHIP, not just to find (2026-08-02)
+- **The problem, stated honestly:** the README makes ~50 quantitative claims; `eval_results/*.json` hold the
+  truth; the two drift apart silently between runs (I kept finding mismatches by reading). Review doesn't scale.
+- **The choice:** a **claims manifest** (`docs/numbers_manifest.yaml`) mapping each README number to (artifact
+  file, slash-separated JSON path, tolerance), and a checker (`make check-numbers`, wired into CI) that fails the
+  build on any drift and reports **all** issues, not the first. Four modes: MISMATCH (artifact ≠ claim), MISSING
+  ANCHOR (the exact claim string was edited), STALE FAMILY (a newer un-cited run of an artifact family exists —
+  "committed a new JSON, forgot the README"), UNSOURCED (a number maps to nothing).
+- **The subtle design point — honest older-run citations are first-class.** A claim can legitimately cite an
+  *older* run; a `pin_reason` records WHICH run and WHY, so "deliberately cites the 2026-07-26 run" is
+  distinguishable from staleness rather than identical to it. Three live pins: the serving 9.9 before-figure, the
+  pareto 2.6× (an earlier run's MPS timings), and the court-mirror 0.999 (the current checkpoint gives **1.0** —
+  kept as a deliberate pin, flagged in the manifest for review).
+- **The population pass WAS the audit — and it found zero mismatches** (the README currently agrees with every
+  artifact), while surfacing the numbers that *aren't* artifact-backed as explicit findings: a stale
+  `56 sole-author commits` (git-sourced, and structurally un-checkable per-commit → recommend dropping it),
+  re-ID cosine ranges and demo-transcript figures (acknowledged in `exempt`, not masquerading as measured). The
+  test count is now COMMAND-verified (`grep 'def test_'`) so it can't silently drift either.
+- **Alternatives:** grep for known numbers (brittle, no source-of-truth link); keep trusting review (the status
+  quo that failed). **Tradeoff:** the manifest is hand-maintained — but that's the point: adding a claim forces
+  you to name its source. Stdlib + pyyaml, so it ports to the sibling repo as two files + one CI step.
+
 ### Headline metric — HOTA (not MOTA or IDF1)
 - **Outcome:** **HOTA 0.301** (√(DetA·AssA), averaged over localization thresholds). The project *earned*
   the choice: **MOTA came out at −0.395**, because a detector that finds every athlete plus the crowd has
@@ -942,6 +1005,18 @@ the next begins. One nuance the data just surfaced: on clean detections, IDSW ro
 guess the next lever, I let the committed numbers point at it.
 
 ---
+
+### "Your README makes ~50 quantitative claims — how do you keep them honest as the project changes?"
+Two layers. **The claims are the deployed numbers:** the eval harness and the API call one shared
+`pipeline.py`, so a committed metric describes the code that runs, not a side experiment. **And drift is a
+build failure, not a review burden:** `make check-numbers` (in CI) maps every README number to its
+`eval_results/` artifact + JSON path via a manifest and fails on any mismatch — a changed number without a new
+artifact, or a new artifact without a README update, both break the build, and it reports *all* mismatches at
+once. Honest older-run citations are first-class (a `pin_reason` records which run and why), so "this
+deliberately cites the 2026-07-26 run" is distinguishable from staleness. The population pass was itself an
+audit — zero mismatches, and it flushed out the few numbers that *aren't* artifact-backed (a git commit count,
+demo-transcript figures) as explicit findings rather than letting them pass as measured. I built it because I
+kept finding these by hand; measurement discipline should cover the documentation too, not just the model.
 
 ## Meta-answer — "how did you keep yourself honest?"
 A written engineering contract with non-negotiable rules — no fake APIs, never cherry-pick numbers, pair
