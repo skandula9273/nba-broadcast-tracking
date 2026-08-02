@@ -233,7 +233,8 @@ coordinates (no broadcast homography). Both the eval harness and `serve` call `p
 ## Quickstart
 
 ```bash
-make install               # deps (+ TrackEval from git)
+python3.11 -m venv .venv   # the make targets use .venv/bin/python (see note below)
+make install               # deps into .venv (+ TrackEval from git)
 make test                  # the real metric tests (106 passing)
 make demo                  # the honest walkthrough
 make eval                  # tracking eval harness -> eval_results/*.json
@@ -255,6 +256,10 @@ make serve                        # FastAPI service (POST /track, /metrics)
 ```
 
 Full target list: `make help`.
+
+> **Environment.** The `make` targets invoke `.venv/bin/python` (Python 3.11), so create the venv before
+> `make install` as shown above. To use a different interpreter or an already-active env, override it:
+> `make PY=python install` (and likewise for any target, e.g. `make PY=python test`).
 
 ---
 
