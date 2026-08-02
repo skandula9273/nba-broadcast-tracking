@@ -3,8 +3,10 @@
 Reconstruct player/ball tracking ("moving dots") from ordinary **NBA broadcast video**, train a
 **play-embedding model** on the trajectories for similarity retrieval, and wrap both in a **measured,
 reproducible eval platform**. The deliverable is the eval rigor and an honest research question — not a tracking
-demo. This is the single-document synthesis; the blow-by-blow lives in `docs/depth-round-notes.md` and the
-`docs/increment-0N-*.md` files, and every number below is a committed timestamped JSON in `eval_results/`.
+demo. This is the **narrative synthesis** — the argument and the findings, in order; the blow-by-blow lives in
+`docs/depth-round-notes.md` and the `docs/increment-0N-*.md` files. Every number below is a committed timestamped
+JSON in `eval_results/`, but the **`README` results table and the JSON are the numbers of record** — if a figure
+here ever drifts from them, trust the artifact.
 
 > **The research question:** how much do downstream basketball analytics (play retrieval) degrade when computed
 > on CV-reconstructed tracking vs ground-truth tracking, and *which* perception errors matter most?
@@ -61,7 +63,7 @@ the limitation. This directly answers the sharpest critique of the centerpiece.
 Reproducibility: encoders are **checkpointed** (`{state_dict, config, seed, corpus fingerprint, git sha}`), so
 the retrieval and degradation artifacts provably describe **one model**, not two same-seed instances. Both the
 eval harness and the FastAPI service call the one shared `pipeline.py`, so committed numbers describe the
-deployed system. 105 tests, fixed seeds, one-command reruns via `make`.
+deployed system. 106 tests, fixed seeds, one-command reruns via `make`.
 
 ---
 
@@ -89,8 +91,12 @@ there would have been *less* honest than reporting that it doesn't work yet.
 - **Serving Pareto:** the deployed imgsz 1280 was strictly **dominated** — 640 gives higher mAP *and* 2.6× fps
   (a train/infer mismatch was silently costing HOTA); a fine-tuned **yolov8n** (3.0M params, 6 MB) sits on the
   frontier at 44.7 fps. Applied to the serve default.
-- **Inference formats:** PyTorch/MPS is fastest; the naive ONNX (CPU) and CoreML exports are *slower* on this
-  Apple hardware — an honest negative for that knob (the resolution/model-size knobs dominate).
+- **Inference formats — a negative that flipped on inspection.** The naive exports first *looked* slower:
+  full-predict ONNX and CoreML both trailed PyTorch/MPS, which read as an honest negative for the format knob.
+  But the variable was the **execution provider**, not the format — `onnxruntime` had silently defaulted to its
+  **CPU** provider. Routing the *same* ONNX graph through the **CoreML EP** (Apple Neural Engine) runs the
+  forward pass in **17.7 ms — 2.47× faster than MPS PyTorch** (43.8 ms). Catching that mislabelled negative is
+  worth more than the speedup itself (`make onnx-providers`).
 - **End-to-end uncertainty:** the retrieval confidence is calibrated → selective prediction recovers 0.82 → ~1.0.
 - **Observability:** real serving metrics + a detections/frame drift signal at `/metrics`.
 - **NL query:** structured text → semantic-constraint retrieval over the *validated* axes (not a fake LLM).
