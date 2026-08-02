@@ -73,7 +73,7 @@ service call the *same* `pipeline.py`, so the numbers describe the deployed syst
 | **Retrieval (instance)** | recall@1 floor **0.62 → 0.98** | on SportVU GT; instance-invariance, not semantics |
 | **Retrieval (semantic)** | supervised precision@5 **0.942** vs SSL 0.51 ≈ random | derived buckets, not annotated set-plays |
 | **End-to-end wire** | real tracker → FAISS, floor r@1 **0.80** | broadcast-domain encoder beats it (0.86 → 0.88) |
-| **Serving** | detect→track **9.9 fps**; imgsz 640 **dominates** 1280 | yolov8n on frontier; CoreML EP 2.5× faster than MPS |
+| **Serving** | detect→track **9.9 → 21.5 fps** (COCO/1280 → deployed fine-tuned/640) | imgsz 640 dominates 1280; yolov8n on frontier; CoreML EP 2.5× faster than MPS |
 | **Uncertainty** | top-1 similarity **calibrated** (corr 0.74, ECE 0.06) | selective prediction 0.82 → ~1.0 |
 
 <details>
@@ -113,9 +113,11 @@ the `_game_json` mtime-duplication bug; the honest same-split floor is **0.62**.
 <summary><b>Serving optimization — the V2 Pareto (a real, actionable frontier)</b></summary>
 
 Sweeping the detector's inference `imgsz` turns the 9.9-fps baseline into a measured frontier and shows the
-**deployed imgsz 1280 is Pareto-dominated**: imgsz **640 gives higher mAP (0.987 vs 0.967) AND 2.6× the fps**,
+**then-deployed imgsz 1280 is Pareto-dominated**: imgsz **640 gives higher mAP (0.987 vs 0.967) AND 2.6× the fps**,
 because the model was fine-tuned at 640 (inferring at 1280 is a train/infer mismatch). Applied + re-measured
-HOTA: 640 beats 1280 on **every** tracking metric (HOTA 0.473 → 0.525, DetA/AssA/MOTA/IDF1 all up). A fine-tuned
+HOTA: 640 beats 1280 on **every** tracking metric (HOTA 0.473 → 0.525, DetA/AssA/MOTA/IDF1 all up); re-benching
+the deployed detect→track path on the new default lifts end-to-end throughput **9.9 → 21.5 fps** (measured, not
+extrapolated — `make serve-bench` now targets `configs/v0_finetuned_640.yaml`). A fine-tuned
 **yolov8n** (3.0M params, 6 MB) lands on the frontier at 44.7 fps. **Inference format:** the naive ONNX/CoreML
 exports looked slower — but only because onnxruntime defaulted to **CPU**; routing ONNX through the **CoreML
 execution provider** (Apple Neural Engine) is **17.7 ms — 2.5× faster than MPS PyTorch** on the forward pass.

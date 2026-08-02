@@ -57,7 +57,7 @@ the limitation. This directly answers the sharpest critique of the centerpiece.
 | **Retrieval (semantic)** | supervised precision@5 **0.942** vs SSL 0.51 ≈ random | derived buckets, not annotated set-plays |
 | **End-to-end wire** | real tracker → FAISS, floor r@1 **0.80**; broadcast-domain encoder **beats** floor (0.86 → 0.88) | image coords, no ball, fragmentation |
 | **Degradation study** | association is the cost; combined trained **0.68** (0.27 with re-ID) vs floor 0.99 | controlled proxy + real confirmation |
-| **Serving** | detect→track **9.9 fps**; Pareto: imgsz 640 **dominates** 1280; yolov8n on the frontier | measured deployment menu |
+| **Serving** | detect→track **9.9 → 21.5 fps** (COCO/1280 → deployed fine-tuned/640); yolov8n on the frontier | measured deployment menu |
 | **Uncertainty** | top-1 similarity **calibrated** (corr 0.74, ECE 0.06); selective → 0.82 → **~1.0** | augmentation-SSL correctness label |
 
 Reproducibility: encoders are **checkpointed** (`{state_dict, config, seed, corpus fingerprint, git sha}`), so

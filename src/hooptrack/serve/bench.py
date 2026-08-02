@@ -77,7 +77,10 @@ def run(args) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Serving latency baseline for the detect->track path")
-    ap.add_argument("--config", default="configs/v0.yaml")
+    # Default MUST match the deployed serve default (serve/app.py: HOOPTRACK_CONFIG default) so the committed
+    # baseline describes what actually ships — the fine-tuned athlete detector at the Pareto-optimal imgsz 640,
+    # NOT the weights-free COCO/1280 fallback. Override with --config configs/v0.yaml for the COCO number.
+    ap.add_argument("--config", default="configs/v0_finetuned_640.yaml")
     ap.add_argument("--seq-dir", default="data/sportsmot/val/v_00HRwkvvjtQ_c007")
     ap.add_argument("--frames", type=int, default=200, help="frames to time (steady state)")
     ap.add_argument("--warmup", type=int, default=8, help="frames for the untimed warmup pass")
