@@ -18,8 +18,9 @@ similarity retrieval, and wrap both in a measured, reproducible eval platform.**
 > **Research question.** How much do downstream basketball analytics (play retrieval) degrade when computed on
 > CV-reconstructed tracking versus ground-truth tracking — and *which* perception errors matter most?
 
-📄 **New here? Read [`docs/writeup.md`](docs/writeup.md) first** — the single-document synthesis: the three
-findings, the numbers, and the honest real/simulated/gated map. `hooptrack` is a placeholder name.
+📄 **New here? Read [`docs/writeup.md`](docs/writeup.md) first** — the narrative synthesis: the three findings
+and the honest real/simulated/gated map, in order. The [Results](#results) table below and the committed JSON in
+[`eval_results/`](eval_results/) are the numbers of record. `hooptrack` is a placeholder name.
 
 ---
 
