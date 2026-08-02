@@ -1,7 +1,7 @@
 """Fragment stitching — spatiotemporal gap-closing logic, numpy only, CI-safe."""
 
-from hooptrack.pipeline import Track
-from hooptrack.reid.stitch import stitch_fragments
+from hoopvec.pipeline import Track
+from hoopvec.reid.stitch import stitch_fragments
 
 
 def _seg(tid, frames, cx, cy=0.0, w=20.0, h=40.0):

@@ -1,6 +1,6 @@
 """Retrieval metric tests — hand-checked expected values. These pass today (pure logic, no CV stack)."""
 
-from hooptrack.eval.metrics import (
+from hoopvec.eval.metrics import (
     hit_rate_at_k,
     mean_recall_at_k,
     mean_reciprocal_rank,

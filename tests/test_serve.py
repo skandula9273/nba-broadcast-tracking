@@ -8,7 +8,7 @@ pytest.importorskip("httpx")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from hooptrack.serve.app import app  # noqa: E402
+from hoopvec.serve.app import app  # noqa: E402
 
 client = TestClient(app)
 
@@ -19,7 +19,7 @@ def test_health_ok():
 
 
 def test_track_missing_source_returns_404():
-    r = client.post("/track", json={"source": "/tmp/hooptrack_does_not_exist"})
+    r = client.post("/track", json={"source": "/tmp/hoopvec_does_not_exist"})
     assert r.status_code == 404          # path validated before the pipeline is built (no CV stack loaded)
 
 

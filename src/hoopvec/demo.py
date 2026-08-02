@@ -1,4 +1,4 @@
-"""hooptrack demo — the centerpiece where it works, and the honest limit where it doesn't. (`make demo`)
+"""hoopvec demo — the centerpiece where it works, and the honest limit where it doesn't. (`make demo`)
 
 A scripted, reproducible walkthrough for a reviewer. It runs the REAL retrieval product on the SportVU
 ground-truth corpus (NL query -> matching plays -> ranked by the trained encoder, with a CALIBRATED
@@ -39,7 +39,7 @@ def run(args) -> None:
     gemb = emb.encode_batch(corpus)
 
     print("=" * 78)
-    print("hooptrack demo — play retrieval on SportVU ground-truth tracks (the working product)")
+    print("hoopvec demo — play retrieval on SportVU ground-truth tracks (the working product)")
     print(f"corpus: {len(corpus)} possessions | encoder: {ckpt.get('arch')} "
           f"(checkpoint git {str(ckpt.get('git_sha'))[:8]})")
     print("=" * 78)
@@ -77,7 +77,7 @@ def run(args) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="hooptrack demo walkthrough")
+    ap = argparse.ArgumentParser(description="hoopvec demo walkthrough")
     ap.add_argument("--checkpoint", default=None, help="saved encoder; default = newest weights/retrieve/*.pt")
     ap.add_argument("--corpus", default="data/sportvu/corpus_g12_T48.npz")
     ap.add_argument("--config", default="configs/semantic_probe.yaml")

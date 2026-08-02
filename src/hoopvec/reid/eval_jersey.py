@@ -11,8 +11,8 @@ Additive ablation — each config changes ONE lever from the previous:
   baseline -> +preprocess (CLAHE) -> +upscale -> +more/even crops -> +band. The winner is promoted to the
   `JerseyOCR` defaults (and hence the deployed re-ID overlay).
 
-Run:  python -m hooptrack.reid.eval_jersey --limit-seqs 4          # ablation on a subset
-      python -m hooptrack.reid.eval_jersey --configs band --seqs all   # winner on all seqs
+Run:  python -m hoopvec.reid.eval_jersey --limit-seqs 4          # ablation on a subset
+      python -m hoopvec.reid.eval_jersey --configs band --seqs all   # winner on all seqs
 """
 from __future__ import annotations
 

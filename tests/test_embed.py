@@ -5,7 +5,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from hooptrack.retrieve.embed import (  # noqa: E402
+from hoopvec.retrieve.embed import (  # noqa: E402
     SetTrajectoryTransformer,
     TrajectoryTransformer,
     info_nce_loss,
@@ -80,8 +80,8 @@ def test_compact_param_budget():
 
 
 def test_encode_batch_roundtrips_numpy():
-    from hooptrack.config import EmbeddingConfig
-    from hooptrack.retrieve.embed import PlayEmbedder
+    from hoopvec.config import EmbeddingConfig
+    from hoopvec.retrieve.embed import PlayEmbedder
 
     cfg = EmbeddingConfig(dim=16, d_model=32, n_heads=4, n_layers=1, ff_dim=32)
     emb = PlayEmbedder(cfg, device="cpu", T=12)

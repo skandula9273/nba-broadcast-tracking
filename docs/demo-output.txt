@@ -1,5 +1,5 @@
 ==============================================================================
-hooptrack demo — play retrieval on SportVU ground-truth tracks (the working product)
+hoopvec demo — play retrieval on SportVU ground-truth tracks (the working product)
 corpus: 2612 possessions | encoder: trajectory_transformer (checkpoint git d373a02d)
 ==============================================================================
 

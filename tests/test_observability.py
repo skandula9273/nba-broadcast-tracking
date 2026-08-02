@@ -1,6 +1,6 @@
 """Serving observability — metrics aggregation + drift signal, pure, CI-safe."""
 
-from hooptrack.serve.observability import Metrics
+from hoopvec.serve.observability import Metrics
 
 
 def _timings(detect=0.1, track=0.01):

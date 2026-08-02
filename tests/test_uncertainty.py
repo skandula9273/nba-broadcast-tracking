@@ -6,7 +6,7 @@ import pytest
 
 pytest.importorskip("torch")  # uncertainty.py -> checkpoint.py imports torch; skip if absent (CI [dev] gate)
 
-from hooptrack.retrieve.uncertainty import (  # noqa: E402
+from hoopvec.retrieve.uncertainty import (  # noqa: E402
     _calibration,
     _retrieve_with_confidence,
     _selective,

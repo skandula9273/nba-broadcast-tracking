@@ -6,7 +6,7 @@ import pytest
 pytest.importorskip("torch")
 pytest.importorskip("yaml")
 
-from hooptrack.retrieve.semantic_probe import (  # noqa: E402
+from hoopvec.retrieve.semantic_probe import (  # noqa: E402
     SCHEMES,
     label_handler,
     label_side,

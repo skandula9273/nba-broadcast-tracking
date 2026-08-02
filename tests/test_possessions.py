@@ -3,8 +3,8 @@
 import numpy as np
 from pytest import approx
 
-from hooptrack.retrieve.possessions import augment, jitter, mirror, order_perturb, temporal_crop
-from hooptrack.retrieve.run import features
+from hoopvec.retrieve.possessions import augment, jitter, mirror, order_perturb, temporal_crop
+from hoopvec.retrieve.run import features
 
 
 def _poss(T=8):

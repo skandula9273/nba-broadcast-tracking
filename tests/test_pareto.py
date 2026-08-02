@@ -1,6 +1,6 @@
 """Pareto-frontier logic for the detector accuracy-latency sweep — pure, CI-safe."""
 
-from hooptrack.detect.pareto import _frontier
+from hoopvec.detect.pareto import _frontier
 
 
 def test_frontier_marks_non_dominated_points():

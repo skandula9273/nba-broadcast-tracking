@@ -1,11 +1,11 @@
 <div align="center">
 
-# 🏀 hooptrack
+# 🏀 hoopvec
 
 **Reconstruct player-and-ball tracking from ordinary NBA broadcast video, train a play-embedding model for
 similarity retrieval, and wrap both in a measured, reproducible eval platform.**
 
-[![CI](https://github.com/skandula9273/nba-broadcast-tracking/actions/workflows/eval.yml/badge.svg)](https://github.com/skandula9273/nba-broadcast-tracking/actions/workflows/eval.yml)
+[![CI](https://github.com/skandula9273/hoopvec/actions/workflows/eval.yml/badge.svg)](https://github.com/skandula9273/hoopvec/actions/workflows/eval.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 [![Lint: ruff](https://img.shields.io/badge/lint-ruff-261230.svg)](https://github.com/astral-sh/ruff)
@@ -20,7 +20,7 @@ similarity retrieval, and wrap both in a measured, reproducible eval platform.**
 
 📄 **New here? Read [`docs/writeup.md`](docs/writeup.md) first** — the narrative synthesis: the three findings
 and the honest real/simulated/gated map, in order. The [Results](#results) table below and the committed JSON in
-[`eval_results/`](eval_results/) are the numbers of record. `hooptrack` is a placeholder name.
+[`eval_results/`](eval_results/) are the numbers of record.
 
 ---
 
@@ -261,7 +261,7 @@ Full target list: `make help`.
 ## Repository layout
 
 ```
-src/hooptrack/
+src/hoopvec/
   pipeline.py     # the ONE shared path (serve + eval call this)
   detect/         # YOLO detector, fine-tune, Pareto, export/format benches
   track/          # ByteTrack / BoT-SORT

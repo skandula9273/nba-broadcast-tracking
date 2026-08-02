@@ -6,7 +6,7 @@ import pytest
 
 cv2 = pytest.importorskip("cv2")
 
-from hooptrack.ingest.frames import extract_frames  # noqa: E402
+from hoopvec.ingest.frames import extract_frames  # noqa: E402
 
 
 def _make_clip(path, n=10, w=64, h=48, fps=25):

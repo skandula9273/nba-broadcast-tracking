@@ -3,8 +3,8 @@
 import numpy as np
 from pytest import approx
 
-from hooptrack.homography.court import reprojection_error
-from hooptrack.homography.keypoints import (
+from hoopvec.homography.court import reprojection_error
+from hoopvec.homography.keypoints import (
     CANONICAL,
     _court_grid,
     evaluate,

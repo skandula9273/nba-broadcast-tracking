@@ -1,6 +1,6 @@
 """Jersey-OCR coverage aggregation — pure metric logic, no easyocr/data, CI-safe."""
 
-from hooptrack.reid.eval_jersey import aggregate
+from hoopvec.reid.eval_jersey import aggregate
 
 
 def _d(reads, number, n_crops, n_read):

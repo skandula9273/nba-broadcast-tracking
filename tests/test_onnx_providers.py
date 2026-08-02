@@ -2,7 +2,7 @@
 
 import time
 
-from hooptrack.detect.onnx_providers import _time
+from hoopvec.detect.onnx_providers import _time
 
 
 def test_time_returns_ms_per_call():

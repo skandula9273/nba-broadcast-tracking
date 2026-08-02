@@ -7,10 +7,11 @@ with `homography=None, reid=None`), so each track's `court_xy` and `player_id` a
 image-box tracks, NOT top-down "moving dots". `/health` is a liveness check; `/metrics` returns rolling
 serving observability (per-stage latency percentiles, throughput, a detections/frame drift signal — V2).
 
-Detector via env `HOOPTRACK_CONFIG` (default `configs/v0_finetuned_640.yaml` -> the fine-tuned athlete detector
+Detector via env `HOOPVEC_CONFIG` (default `configs/v0_finetuned_640.yaml` -> the fine-tuned athlete detector
 at imgsz 640, the measured Pareto-optimal operating point: peak mAP 0.987 / HOTA 0.525 / ~25 fps, beating the
 old imgsz-1280 default on both accuracy and speed). Needs the local fine-tuned weights (`weights/finetuned/
-best.pt`, gitignored); set `HOOPTRACK_CONFIG=configs/v0.yaml` for a weights-free COCO yolov8m fallback. The
+best.pt`, gitignored); set `HOOPVEC_CONFIG=configs/v0.yaml` for a weights-free COCO yolov8m fallback (the
+former `HOOPTRACK_CONFIG` is still honoured for back-compat). The
 heavy stack (YOLO/boxmot) is imported lazily on the first /track call, so `/health` stays cheap.
 """
 from __future__ import annotations
@@ -23,7 +24,7 @@ from pydantic import BaseModel
 
 from .observability import Metrics
 
-app = FastAPI(title="hooptrack")
+app = FastAPI(title="hoopvec")
 _PIPELINE = None  # (Config, Pipeline) built once on the first /track call
 _METRICS = Metrics()  # rolling serving metrics fed by /track, exposed at /metrics (V2 observability)
 
@@ -45,14 +46,15 @@ def _pipeline():
         from ..reid.identify import build_reid
         from ..track.tracker import build_tracker
 
-        requested = os.environ.get("HOOPTRACK_CONFIG", "configs/v0_finetuned_640.yaml")
-        cfg = load_config(requested)
+        # Config via env: HOOPVEC_CONFIG (the deprecated HOOPTRACK_CONFIG is still read for back-compat).
+        explicit = os.environ.get("HOOPVEC_CONFIG") or os.environ.get("HOOPTRACK_CONFIG")
+        cfg = load_config(explicit or "configs/v0_finetuned_640.yaml")
         # The Pareto-optimal default uses the fine-tuned weights (gitignored, local-only). On a fresh checkout
         # they're absent — fall back to the weights-free COCO config with a clear warning rather than crashing
-        # on the first /track. An explicit HOOPTRACK_CONFIG is always honoured as-is (no silent override).
-        if "HOOPTRACK_CONFIG" not in os.environ and cfg.detect.weights and not Path(cfg.detect.weights).exists():
+        # on the first /track. An explicit config env var is always honoured as-is (no silent override).
+        if explicit is None and cfg.detect.weights and not Path(cfg.detect.weights).exists():
             print(f"[serve] fine-tuned weights {cfg.detect.weights!r} not found -> falling back to configs/v0.yaml "
-                  "(COCO yolov8m). Set HOOPTRACK_CONFIG to override.", flush=True)
+                  "(COCO yolov8m). Set HOOPVEC_CONFIG to override.", flush=True)
             cfg = load_config("configs/v0.yaml")
         _PIPELINE = (cfg, Pipeline(cfg=cfg, detector=build_detector(cfg.detect),
                                    tracker=build_tracker(cfg.track), homography=build_homography(cfg),
@@ -79,7 +81,7 @@ def track(req: TrackRequest) -> dict:
 
     src = Path(req.source)
     if src.is_file():                                   # a video clip -> decode to frames on disk
-        seq = extract_frames(src, tempfile.mkdtemp(prefix="hooptrack_"), every=req.every,
+        seq = extract_frames(src, tempfile.mkdtemp(prefix="hoopvec_"), every=req.every,
                              max_frames=req.max_frames)
         source_kind = "video (decoded)"
     elif (src / "img1").is_dir() or (src / "seqinfo.ini").is_file():

@@ -1,6 +1,6 @@
 """Analytics tests — numpy only, synthetic tracks, CI-safe."""
 
-from hooptrack.analytics.possessions import (
+from hoopvec.analytics.possessions import (
     analytics,
     ball_handler_timeline,
     ball_possession,
@@ -8,7 +8,7 @@ from hooptrack.analytics.possessions import (
     segment_phases,
     spacing,
 )
-from hooptrack.pipeline import Track, TrackResult
+from hoopvec.pipeline import Track, TrackResult
 
 
 def _res(tracks):

@@ -7,8 +7,8 @@ none of torch/ultralytics/boxmot/trackeval.
 import numpy as np
 from pytest import approx
 
-from hooptrack.eval.trackeval_adapter import _scalar, _summarize, write_mot
-from hooptrack.pipeline import Track
+from hoopvec.eval.trackeval_adapter import _scalar, _summarize, write_mot
+from hoopvec.pipeline import Track
 
 
 def test_write_mot_format_and_sorting(tmp_path):

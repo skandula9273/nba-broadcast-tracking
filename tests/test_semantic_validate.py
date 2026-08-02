@@ -6,7 +6,7 @@ pytest.importorskip("torch")  # torch is in the [cv] extra, not the CI [dev] gat
 
 import torch  # noqa: E402
 
-from hooptrack.retrieve.semantic_validate import supcon_loss  # noqa: E402
+from hoopvec.retrieve.semantic_validate import supcon_loss  # noqa: E402
 
 
 def _norm(x):

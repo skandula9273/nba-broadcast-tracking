@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from hooptrack.retrieve.nl_query import parse_query, query_corpus
+from hoopvec.retrieve.nl_query import parse_query, query_corpus
 
 
 def test_parse_query_maps_and_composes_keywords():

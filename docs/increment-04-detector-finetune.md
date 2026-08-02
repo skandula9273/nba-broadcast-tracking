@@ -59,7 +59,7 @@ the committed numbers pointed at it.
   (the MPS NaN cause), batch 4 / imgsz 640 (fits memory). Even then, **per-epoch time grew over the run**
   (mosaic aug early + MPS memory pressure), so the actual wall-clock was **~7.3 h**, not the ~3 h the warm
   1-epoch probe implied — an honest ETA miss: a single-epoch measurement under-predicts MPS training.
-- **Reproduce:** `python -m hooptrack.detect.finetune --epochs 20 --imgsz 640 --batch 4 --subsample 5
+- **Reproduce:** `python -m hoopvec.detect.finetune --epochs 20 --imgsz 640 --batch 4 --subsample 5
   --device mps`, then `make track/eval` with `configs/v0_finetuned.yaml`. (Fine-tuned weights are
   gitignored; the training set is re-derivable from `make data` + the finetune command.)
 

@@ -27,7 +27,7 @@ it establishes a **measured floor** that every later, heavier method must beat, 
 Two properties make the number trustworthy:
 
 - **One shared pipeline.** The eval harness and (later) the serving API call the *same* code path
-  (`src/hooptrack/pipeline.py`). We measure the system we would deploy, not a lookalike.
+  (`src/hoopvec/pipeline.py`). We measure the system we would deploy, not a lookalike.
 - **The harness cannot fake a number.** `eval/run.py` writes a metric only if its stage actually ran;
   anything unrun is `null` with a `status` string. A scaffold run can never be misread as a result.
 

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from hooptrack.retrieve.degrade import (
+from hoopvec.retrieve.degrade import (
     dropout_interp,
     id_swap,
     jitter_ft,

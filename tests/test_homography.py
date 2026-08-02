@@ -5,8 +5,8 @@ from types import SimpleNamespace
 import numpy as np
 from pytest import approx
 
-from hooptrack.config import HomographyConfig
-from hooptrack.homography.court import (
+from hoopvec.config import HomographyConfig
+from hoopvec.homography.court import (
     CourtHomography,
     build_homography,
     fixed_register,
@@ -17,7 +17,7 @@ from hooptrack.homography.court import (
     reprojection_error,
     solve_homography,
 )
-from hooptrack.pipeline import Track
+from hoopvec.pipeline import Track
 
 
 def test_homography_from_calibration_identity():

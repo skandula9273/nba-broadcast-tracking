@@ -7,9 +7,9 @@ pytest.importorskip("torch")  # torch is in the [cv] extra, not the CI [dev] gat
 
 import torch  # noqa: E402
 
-from hooptrack.config import EmbeddingConfig  # noqa: E402
-from hooptrack.retrieve.checkpoint import corpus_fingerprint, load_checkpoint, save_checkpoint  # noqa: E402
-from hooptrack.retrieve.embed import PlayEmbedder  # noqa: E402
+from hoopvec.config import EmbeddingConfig  # noqa: E402
+from hoopvec.retrieve.checkpoint import corpus_fingerprint, load_checkpoint, save_checkpoint  # noqa: E402
+from hoopvec.retrieve.embed import PlayEmbedder  # noqa: E402
 
 
 def _small_embedder():

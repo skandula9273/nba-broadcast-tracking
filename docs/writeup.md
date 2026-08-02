@@ -1,4 +1,4 @@
-# hooptrack — technical writeup
+# hoopvec — technical writeup
 
 Reconstruct player/ball tracking ("moving dots") from ordinary **NBA broadcast video**, train a
 **play-embedding model** on the trajectories for similarity retrieval, and wrap both in a **measured,

@@ -5,7 +5,7 @@ coords → possession tensor → embedding → retrieval — and be explicit abo
 clean number; one clip, honestly, is the deliverable. Scoped deliberately: no homography front-end, no re-ID,
 no generalization to many clips.
 
-Run: `python -m hooptrack.retrieve.from_tracks --checkpoint weights/retrieve/<arch>_<ts>.pt`
+Run: `python -m hoopvec.retrieve.from_tracks --checkpoint weights/retrieve/<arch>_<ts>.pt`
 (commit: `eval_results/end2end_oneclip_*.json`; clip `v_00HRwkvvjtQ_c007`, window frames 1–48.)
 
 ## What actually ran

@@ -1,4 +1,4 @@
-# Depth round — hooptrack (NBA broadcast tracking)
+# Depth round — hoopvec (NBA broadcast tracking)
 
 A running notes file for the depth-round interview (an interviewer picks this project and drills it for
 ~45 min: *did you actually do the work, and do you understand the choices you made?*). Also the draft of
@@ -819,7 +819,7 @@ auto-registers a frame -> `court_xy`.
   reason is the exact one the study localized (association / player identity), now shown end-to-end.
 
 ### V1 + V2-upside complete — the honest demo and the single-doc writeup (2026-07-30)
-- **Demo (`make demo`, `hooptrack/demo.py`):** a reproducible five-minute walkthrough that runs the product
+- **Demo (`make demo`, `hoopvec/demo.py`):** a reproducible five-minute walkthrough that runs the product
   *where it works* — NL query → real matching plays over SportVU GT, then similar-play retrieval with the
   **calibrated confidence** (shows a HIGH 0.90 and a LOW 0.64 "would abstain", the uncertainty result made
   tangible) — then **names the broadcast gap** (inc-10) rather than faking the broadcast demo that doesn't work.

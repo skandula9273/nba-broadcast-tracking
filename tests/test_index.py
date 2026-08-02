@@ -8,7 +8,7 @@ import pytest
 
 pytest.importorskip("faiss")
 
-from hooptrack.retrieve.index import VectorIndex  # noqa: E402
+from hoopvec.retrieve.index import VectorIndex  # noqa: E402
 
 
 def _normed(n, d, seed=0):

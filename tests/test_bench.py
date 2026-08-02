@@ -1,6 +1,6 @@
 """Serving-latency arithmetic — ms/frame + fps, no CV stack, CI-safe."""
 
-from hooptrack.serve.bench import _stage
+from hoopvec.serve.bench import _stage
 
 
 def test_stage_ms_per_frame_and_fps():

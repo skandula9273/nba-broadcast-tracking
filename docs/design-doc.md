@@ -244,7 +244,8 @@ eval so committed numbers describe the deployed system.
 
 ## Open decisions (close before lock — your calls)
 
-1. **Project / repo name** (this working title is a placeholder).
+1. **Project / repo name** — RESOLVED (2026-08-02): **`hoopvec`** (basketball play embeddings for retrieval;
+   renamed from the `hooptrack` working title once the centerpiece moved from tracking to the embedding core).
 2. **Detector:** YOLO (AGPL, CoreML, fast) vs RF-DETR (Apache, generalization) vs YOLOX (MIT).
 3. **The V0 line:** is it detection + tracking + HOTA (proposed), or a thinner/thicker first slice?
 4. **Embedding-core architecture** (trajectory transformer vs baller2vec) and the **similar-play labeling scheme**.

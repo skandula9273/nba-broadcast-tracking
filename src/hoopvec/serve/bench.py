@@ -77,7 +77,7 @@ def run(args) -> dict:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Serving latency baseline for the detect->track path")
-    # Default MUST match the deployed serve default (serve/app.py: HOOPTRACK_CONFIG default) so the committed
+    # Default MUST match the deployed serve default (serve/app.py: HOOPVEC_CONFIG default) so the committed
     # baseline describes what actually ships — the fine-tuned athlete detector at the Pareto-optimal imgsz 640,
     # NOT the weights-free COCO/1280 fallback. Override with --config configs/v0.yaml for the COCO number.
     ap.add_argument("--config", default="configs/v0_finetuned_640.yaml")

@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from hooptrack.pipeline import Track, TrackResult
-from hooptrack.retrieve.from_tracks import order_tracks, track_result_to_tensor
+from hoopvec.pipeline import Track, TrackResult
+from hoopvec.retrieve.from_tracks import order_tracks, track_result_to_tensor
 
 
 def _res(tracks):

@@ -4,10 +4,10 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from hooptrack.config import ReidConfig, TrackConfig
-from hooptrack.pipeline import Track
-from hooptrack.reid.identify import ReIDIdentifier, agglomerate, build_reid
-from hooptrack.reid.jersey import majority_number
+from hoopvec.config import ReidConfig, TrackConfig
+from hoopvec.pipeline import Track
+from hoopvec.reid.identify import ReIDIdentifier, agglomerate, build_reid
+from hoopvec.reid.jersey import majority_number
 
 
 def _l2rows(x):

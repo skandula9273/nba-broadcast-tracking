@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from hooptrack.reid.eval_jersey_accuracy import degrade, render_number
+from hoopvec.reid.eval_jersey_accuracy import degrade, render_number
 
 
 def test_render_number_shape():
